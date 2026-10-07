@@ -43,12 +43,34 @@ export interface Session {
   slides: Slide[];
 }
 const id = stableIdSchema;
-const name = z.string().trim().min(1).max(200);
-const text = z.string().max(200);
-const position = z
+export const representativeSchema = z.string().trim().min(1).max(200);
+const name = representativeSchema;
+export const representationSchema = z.string().max(200);
+const text = representationSchema;
+export const positionSchema = z
   .object({
     x: z.number().finite().min(40).max(960),
     y: z.number().finite().min(40).max(660),
+  })
+  .strict();
+const position = positionSchema;
+export const rotationSchema = z.number().finite();
+export const colorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+export const shapeSchema = z.enum(["circle", "triangle", "square"]);
+export const assignmentSchema = z
+  .object({
+    id: stableIdSchema,
+    representative: representativeSchema,
+    representing: representationSchema,
+  })
+  .strict();
+export const pieceSchema = z
+  .object({
+    assignmentId: stableIdSchema,
+    position: positionSchema,
+    rotation: rotationSchema,
+    color: colorSchema,
+    shape: shapeSchema,
   })
   .strict();
 export const commandSchema = z.discriminatedUnion("type", [
@@ -81,7 +103,7 @@ export const commandSchema = z.discriminatedUnion("type", [
       slideId: id,
       assignmentId: id,
       field: z.enum(["position", "rotation", "color", "shape"]),
-      value: z.union([position, z.number().finite(), z.string()]),
+      value: z.union([position, rotationSchema, z.string()]),
     })
     .strict(),
   z.object({ type: z.literal("slide.create"), id, after: id }).strict(),
@@ -270,14 +292,9 @@ export function applyCommand(
       if (!piece) throw new Error("This piece was removed.");
       if (c.field === "position") piece.position = position.parse(c.value);
       if (c.field === "rotation")
-        piece.rotation = z.number().finite().parse(c.value) % 360;
-      if (c.field === "color")
-        piece.color = z
-          .string()
-          .regex(/^#[0-9a-fA-F]{6}$/)
-          .parse(c.value);
-      if (c.field === "shape")
-        piece.shape = z.enum(["circle", "triangle", "square"]).parse(c.value);
+        piece.rotation = rotationSchema.parse(c.value) % 360;
+      if (c.field === "color") piece.color = colorSchema.parse(c.value);
+      if (c.field === "shape") piece.shape = shapeSchema.parse(c.value);
       break;
     }
     case "slide.create": {

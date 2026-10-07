@@ -151,3 +151,37 @@ performed by this implementation worker.
   dropdown. Earlier Safari collaboration results predate these composer changes.
 
 Use [manual-verification.md](manual-verification.md) to capture those results. The optional join-code branch remains deferred as allowed by the accepted specification: default false is functional; true refuses startup. The original interview specification and ADRs were preserved.
+
+
+### Supplied code-review findings: implementation follow-up
+
+Reviewed baseline: `faa9435cea7a93c2646413993c008929a1ddece7`. The current task
+worktree fixes the three concrete Spec defects: lost-response/remount entry
+creation identity, raw edge rotation, and archiving displaced composer text before
+recovery. Shared validation schemas and focused UI components address both
+Standards judgement calls. See [review-fixes.md](review-fixes.md) for scope and
+follow-up inspection. The board owns checkpointing and independent formal re-review.
+
+The browser regressions were exercised against original source and demonstrated
+changed retry IDs, missing displaced text, and incorrect edge rotation. Final
+Windows verification after the presence-boundary correction:
+
+- `npm.cmd test`: production build and TypeScript check passed; **22 tests across
+  7 Vitest files passed** (7.93 seconds).
+- `npx.cmd playwright test --output=test-results/review-fixes-final-boundaries`:
+  **20/20 passed** (1.1 minutes), Chrome 155.0.8059.39 and Edge 154.0.4258.53.
+  Includes the three new scenarios on both channels, actual remount retry and
+  reload reconciliation, recovery attribution, and rotation beyond all four
+  SVG edges without changing position or sending invalid presence.
+- `git diff --check`: passed.
+
+No implementation source changed after those final checks. The six tested
+source/test files in this follow-up have aggregate SHA-256 `640c0fd48be401e001b8bc050ac82c73098ae4e90206404d87e888d266adcd4b`.
+The fingerprint hashes each sorted relative path, NUL, file bytes, then NUL:
+App.tsx, Board.tsx, Transcript.tsx under src/client; src/server/validation.ts;
+src/shared/domain.ts; tests/browser/workflow.spec.ts.
+
+**Overall verified remains false:** actual Safari printing/PDF in all three label
+modes and actual Safari checks of the updated speaker/dropdown/composer workflows
+remain pending. Windows automation does not replace those manual checks. No
+independent review approval, commit, merge, integration, or push is claimed.

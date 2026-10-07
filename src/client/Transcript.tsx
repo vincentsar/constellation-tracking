@@ -71,6 +71,8 @@ export interface LocalDraft {
   target: string;
   speaker: string | null;
   text: RichText;
+  creationId?: string;
+  pendingCreation?: { speaker: string | null; text: RichText };
 }
 const prefix = "constellation:draft:";
 export function draftKey(sessionId: string, target: string) {
@@ -515,7 +517,8 @@ export function Composer({
     stored?.speaker ?? null,
   );
   const [busy, setBusy] = useState(false);
-  const [entryId, setEntryId] = useState(newId());
+  const entryId = useRef(stored?.creationId ?? newId());
+  const pendingCreation = useRef(stored?.pendingCreation);
   const latest = useRef(props);
   latest.current = props;
   const speakerRef = useRef(speaker);
@@ -567,6 +570,8 @@ export function Composer({
           target: `composer-${latest.current.slideId}`,
           speaker: speakerRef.current,
           text: editor.getJSON() as RichText,
+          creationId: entryId.current,
+          pendingCreation: pendingCreation.current,
         });
       },
     },
@@ -587,13 +592,30 @@ export function Composer({
     setBusy(true);
     editor.setEditable(false);
     try {
-      await submit(entryId, speaker, editor.getJSON() as RichText);
-      editor.commands.clearContent();
-      localStorage.removeItem(
-        draftKey(props.session.id, `composer-${props.slideId}`),
-      );
-      setEntryId(newId());
-      editor.commands.focus();
+      const text = editor.getJSON() as RichText;
+      const submittedId = entryId.current;
+      pendingCreation.current = { speaker, text };
+      // Persist before sending: a lost response must not allocate a second ID.
+      saveDraft({
+        sessionId: props.session.id,
+        slideId: props.slideId,
+        target: `composer-${props.slideId}`,
+        speaker,
+        text,
+        creationId: entryId.current,
+        pendingCreation: pendingCreation.current,
+      });
+      await submit(submittedId, speaker, text);
+      // A synchronized receipt or a recovery may already have replaced this draft.
+      if (entryId.current === submittedId) {
+        pendingCreation.current = undefined;
+        entryId.current = newId();
+        editor.commands.clearContent();
+        localStorage.removeItem(
+          draftKey(props.session.id, `composer-${props.slideId}`),
+        );
+        editor.commands.focus();
+      }
     } catch {
       /* Transport displays the error. The composer and stable ID survive. */
     } finally {
@@ -608,26 +630,68 @@ export function Composer({
     editor,
     selector: ({ editor }) => editor?.isEmpty ?? true,
   });
+  const archiveCurrent = () => {
+    if (editor?.getText().trim())
+      saveDraft({
+        sessionId: props.session.id,
+        slideId: props.slideId,
+        target: `recovered-${newId()}`,
+        speaker: speakerRef.current,
+        text: editor.getJSON() as RichText,
+        creationId: entryId.current,
+        pendingCreation: pendingCreation.current,
+      });
+  };
+  useEffect(() => {
+    if (!editor || !props.connected || !pendingCreation.current) return;
+    const saved = props.session.slides.some((slide) =>
+      slide.entries.some((entry) => entry.id === entryId.current),
+    );
+    if (!saved) return;
+    // A synchronized source confirms creation even if its HTTP response was lost.
+    if (
+      JSON.stringify(editor.getJSON()) !==
+        JSON.stringify(pendingCreation.current.text) ||
+      speakerRef.current !== pendingCreation.current.speaker
+    ) {
+      pendingCreation.current = undefined;
+      entryId.current = newId();
+      saveDraft({
+        sessionId: props.session.id,
+        slideId: props.slideId,
+        target: `composer-${props.slideId}`,
+        speaker: speakerRef.current,
+        text: editor.getJSON() as RichText,
+        creationId: entryId.current,
+      });
+    } else {
+      pendingCreation.current = undefined;
+      entryId.current = newId();
+      editor.commands.clearContent();
+      localStorage.removeItem(
+        draftKey(props.session.id, `composer-${props.slideId}`),
+      );
+    }
+  }, [editor, props.connected, props.session, props.slideId]);
   useEffect(() => {
     onHandle(
       editor
         ? {
             focusEmpty: (speaker) => {
-              if (editor.getText().trim())
-                saveDraft({
-                  sessionId: props.session.id,
-                  slideId: props.slideId,
-                  target: `recovered-${newId()}`,
-                  speaker: speakerRef.current,
-                  text: editor.getJSON() as RichText,
-                });
+              archiveCurrent();
+              speakerRef.current = speaker;
               setSpeaker(speaker);
-              setEntryId(newId());
+              entryId.current = newId();
+              pendingCreation.current = undefined;
               editor.commands.clearContent();
               editor.commands.focus();
             },
             recover: (draft) => {
+              archiveCurrent();
+              speakerRef.current = draft.speaker;
               setSpeaker(draft.speaker);
+              entryId.current = draft.creationId ?? newId();
+              pendingCreation.current = draft.pendingCreation;
               editor.commands.setContent(draft.text);
               editor.commands.focus();
             },
@@ -652,6 +716,8 @@ export function Composer({
                 target: `composer-${props.slideId}`,
                 speaker: value,
                 text: editor.getJSON() as RichText,
+                creationId: entryId.current,
+                pendingCreation: pendingCreation.current,
               });
           }}
         >

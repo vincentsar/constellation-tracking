@@ -9,19 +9,18 @@ earlier two-agent Impeccable assessment reviewed dropdown design only.
 
 ## Candidate and comparison
 
-Current task HEAD is `1cc5b70` (the cross-platform verification snapshot). The
-task worktree also contains the returned Mac fixes/evidence and the subsequent
-speaker-shortcut/dropdown changes. These include untracked source, tests, and
-reports, so reviewing only `HEAD` or its tracked diff would omit candidate work.
+The board checkpointed the reviewed implementation at `faa9435`. The task
+worktree now contains follow-up fixes for the three supplied Spec defects and
+bounded improvements for both Standards smells. These changes require a new
+board checkpoint before formal re-review.
 
-The board should checkpoint this complete worktree before assigning reviewers.
-Recommended full-task fixed point: `91823b9`, the empty initial repository commit.
-After checkpointing, pin the resulting candidate SHA and use:
+The fix comparison is `git diff faa9435` in this task worktree. The board should
+pin its new checkpoint SHA and review `faa9435...<new-candidate-sha>` for the
+follow-up. Recommended full-task fixed point remains `91823b9`, the empty initial
+repository commit, for a complete product review.
 
-```text
-git diff 91823b9...<candidate-sha>
-git log 91823b9..<candidate-sha> --oneline
-```
+See [review-fixes.md](review-fixes.md) for the fix scope, follow-up inspection,
+regression evidence, and outstanding Safari acceptance checks.
 
 This scope includes the entire product, rather than only the follow-up changes
 after the verification snapshot. The board selects and records the final review

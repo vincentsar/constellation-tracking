@@ -561,3 +561,227 @@ test("leading colon shortcuts select speakers while inline mentions and ambiguou
   ).toHaveCount(1);
   await expect(page.getByText(/Saved on host/)).toBeVisible();
 });
+
+test("lost creation response survives remount and reconciles without duplicating speech", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.assign(window, { pauseReceipts: false });
+    const descriptor = Object.getOwnPropertyDescriptor(
+      WebSocket.prototype,
+      "onmessage",
+    )!;
+    Object.defineProperty(WebSocket.prototype, "onmessage", {
+      ...descriptor,
+      set(handler) {
+        descriptor.set!.call(this, (event: MessageEvent) => {
+          if (
+            Reflect.get(window, "pauseReceipts") &&
+            typeof event.data === "string" &&
+            JSON.parse(event.data).type === "saved"
+          )
+            return;
+          handler?.call(this, event);
+        });
+      },
+    });
+  });
+  const name = `Lost response ${Date.now()}`;
+  await join(page, "Pat");
+  await create(page, name);
+  await page.getByRole("button", { name: "Snapshot / new slide" }).click();
+  await expect(
+    page.getByRole("button", { name: "Previous", exact: true }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
+  const composer = page.getByRole("textbox", { name: "New transcript entry" });
+  await composer.fill("Saved once despite losing the response");
+  await page.evaluate(() => Reflect.set(window, "pauseReceipts", true));
+  let savedId = "";
+  await page.route("**/commands", async (route) => {
+    if (route.request().postDataJSON().type !== "entry.create")
+      return route.continue();
+    const response = await route.fetch(); // Real host persists before the response is dropped.
+    expect(response.ok()).toBeTruthy();
+    savedId = (await response.json()).slides[0].entries[0].id;
+    await route.abort("failed");
+  });
+  await composer.press("Enter");
+  await expect(page.getByRole("alert")).toContainText("Failed to fetch");
+  const draft = await page.evaluate(() =>
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("constellation:draft:"))
+      .map((key) => JSON.parse(localStorage.getItem(key)!))
+      .find((draft) => draft.target.startsWith("composer-")),
+  );
+  expect(JSON.stringify(draft.text)).toContain(
+    "Saved once despite losing the response",
+  );
+  await page.unroute("**/commands");
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await page.getByRole("button", { name: "Previous", exact: true }).click();
+  await expect(composer).toHaveText("Saved once despite losing the response");
+  const retry = page.waitForRequest((request) =>
+    request.url().endsWith("/commands"),
+  );
+  await composer.press("Enter");
+  expect((await retry).postDataJSON().id).toBe(savedId);
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect(composer).toHaveText("");
+  await join(page, "Pat"); // Reload destroys the composer and its in-memory ID.
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect(page.locator(".entry")).toHaveAttribute(
+    "data-entry-id",
+    savedId,
+  );
+  await expect(composer).toHaveText("");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("constellation:draft:"))
+          .map((key) => JSON.parse(localStorage.getItem(key)!))
+          .filter((draft) => draft.pendingCreation),
+      ),
+    )
+    .toEqual([]);
+});
+
+test("recovering a draft archives the unfinished composer and its attribution", async ({
+  page,
+}) => {
+  await join(page, "Editor");
+  await create(page, `Recovery ${Date.now()}`);
+  await assignment(page, "Alice", "Mother");
+  const composer = page.getByRole("textbox", { name: "New transcript entry" });
+  await composer.fill("Original general note");
+  await page.locator(".piece-label").dblclick(); // Archive the first draft.
+  await composer.fill("Alice's unfinished speech");
+  await page.getByRole("button", { name: "Local drafts", exact: true }).click();
+  await page
+    .locator(".draft-list article")
+    .filter({ hasText: "Original general note" })
+    .getByRole("button", { name: "Recover into composer" })
+    .click();
+  await expect(composer).toHaveText("Original general note");
+  await expect(page.locator(".composer select")).toHaveValue("");
+  const drafts = await page.evaluate(() =>
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith("constellation:draft:"))
+      .map((key) => JSON.parse(localStorage.getItem(key)!)),
+  );
+  const displaced = drafts.find((draft) =>
+    JSON.stringify(draft.text).includes("Alice's unfinished speech"),
+  );
+  expect(displaced).toBeDefined();
+  expect(displaced.target).toMatch(/^recovered-/);
+  expect(displaced.speaker).toBeTruthy();
+  expect(
+    drafts.find((draft) => draft.target.startsWith("composer-")).speaker,
+  ).toBeNull();
+  await composer.press("Enter");
+  await expect(page.locator(".entry-heading strong")).toHaveText(
+    "General note",
+  );
+  await page.getByRole("button", { name: "Local drafts", exact: true }).click();
+  await page.getByRole("button", { name: "Local drafts", exact: true }).click();
+  await expect(page.locator(".draft-list")).toContainText(
+    "Alice's unfinished speech",
+  );
+});
+
+test("rotation handles reach unrestricted angles at all four board edges", async ({
+  page,
+}) => {
+  await join(page, "Editor");
+  await create(page, `Edge rotation ${Date.now()}`);
+  const requestPromise = page.waitForRequest((request) =>
+    request.url().endsWith("/commands"),
+  );
+  await assignment(page, "Alice", "Mother");
+  const request = await requestPromise;
+  const command = request.postDataJSON();
+  const headers = { authorization: request.headers().authorization };
+  for (const edge of [
+    {
+      position: { x: 40, y: 300 },
+      initial: 90,
+      target: { x: -10, y: 300 },
+      angle: -90,
+    },
+    {
+      position: { x: 960, y: 300 },
+      initial: 270,
+      target: { x: 1010, y: 300 },
+      angle: 90,
+    },
+    {
+      position: { x: 500, y: 40 },
+      initial: 180,
+      target: { x: 500, y: -10 },
+      angle: 0,
+    },
+    {
+      position: { x: 500, y: 660 },
+      initial: 0,
+      target: { x: 500, y: 710 },
+      angle: 180,
+    },
+  ]) {
+    for (const [field, value] of [
+      ["position", edge.position],
+      ["rotation", edge.initial],
+    ]) {
+      const response = await page.request.post(request.url(), {
+        headers,
+        data: {
+          type: "piece.set",
+          slideId: command.slideId,
+          assignmentId: command.id,
+          field,
+          value,
+        },
+      });
+      expect(response.ok()).toBeTruthy();
+    }
+    await expect(page.getByLabel("Facing angle")).toHaveValue(
+      String(edge.initial),
+    );
+    await page.locator(".rotation-handle circle").scrollIntoViewIfNeeded();
+    const handle = await page.locator(".rotation-handle circle").boundingBox();
+    const target = await page.locator(".board").evaluate((svg, point) => {
+      const p = new DOMPoint(point.x, point.y).matrixTransform(
+        (svg as SVGSVGElement).getScreenCTM()!,
+      );
+      return { x: p.x, y: p.y };
+    }, edge.target);
+    await page.mouse.move(
+      handle!.x + handle!.width / 2,
+      handle!.y + handle!.height / 2,
+    );
+    await page.mouse.down();
+    await page.mouse.move(target.x, target.y, { steps: 5 });
+    await page.mouse.up();
+    await expect
+      .poll(async () =>
+        Math.abs(
+          ((Number(await page.getByLabel("Facing angle").inputValue()) -
+            edge.angle +
+            540) %
+            360) -
+            180,
+        ),
+      )
+      .toBeLessThan(0.5);
+    await expect(
+      page.locator(`[data-testid="piece-${command.id}"]`),
+    ).toHaveAttribute(
+      "transform",
+      `translate(${edge.position.x} ${edge.position.y})`,
+    );
+    await expect(page.getByRole("alert")).toHaveCount(0);
+  }
+});

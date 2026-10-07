@@ -55,10 +55,8 @@ export function Board({
     const p = new DOMPoint(event.clientX, event.clientY).matrixTransform(
       matrix,
     );
-    return {
-      x: Math.max(40, Math.min(960, p.x)),
-      y: Math.max(40, Math.min(660, p.y)),
-    };
+    // Rotation needs the raw board point, including outside the movement bounds.
+    return { x: p.x, y: p.y };
   };
   const begin = (
     event: React.PointerEvent<SVGElement>,
@@ -89,7 +87,10 @@ export function Board({
         onPointerMove={(event) => {
           const p = point(event);
           if (connected && Date.now() - lastCursor.current > 80) {
-            cursor(p);
+            cursor({
+              x: Math.max(0, Math.min(1000, p.x)),
+              y: Math.max(0, Math.min(700, p.y)),
+            });
             lastCursor.current = Date.now();
           }
           const active = drag.current;

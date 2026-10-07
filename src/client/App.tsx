@@ -7,6 +7,7 @@ import {
   type LabelMode,
   type RichText,
   type Session,
+  type Slide,
 } from "../shared/domain";
 import { boardSvg } from "../shared/scene";
 import { hostHasSavedUpdate } from "../shared/receipt";
@@ -23,6 +24,53 @@ import {
   type LocalDraft,
 } from "./Transcript";
 import { api, useSessionConnection } from "./transport";
+
+function SlideNavigation({
+  session,
+  slideId,
+  connected,
+  navigate,
+  snapshot,
+}: {
+  session: Session;
+  slideId: string;
+  connected: boolean;
+  navigate: (id: string) => void;
+  snapshot: () => void;
+}) {
+  const index = session.slides.findIndex((slide) => slide.id === slideId);
+  const slide = session.slides[index];
+  return (
+    <nav className="slide-bar" aria-label="Slides">
+      <button
+        disabled={index === 0}
+        onClick={() => navigate(session.slides[index - 1].id)}
+      >
+        Previous
+      </button>
+      <div className="slide-tabs">
+        {session.slides.map((s, i) => (
+          <button
+            key={s.id}
+            aria-current={s.id === slide.id ? "page" : undefined}
+            onClick={() => navigate(s.id)}
+          >
+            {i + 1}. {s.title || "Untitled"}
+          </button>
+        ))}
+      </div>
+      <button
+        disabled={index === session.slides.length - 1}
+        onClick={() => navigate(session.slides[index + 1].id)}
+      >
+        Next
+      </button>
+      <button className="primary" disabled={!connected} onClick={snapshot}>
+        Snapshot / new slide
+      </button>
+    </nav>
+  );
+}
 
 function Field({
   value,
@@ -197,6 +245,313 @@ function DraftDrawer({
     </div>
   );
 }
+function AssignmentPanel({
+  session,
+  slide,
+  connected,
+  mutate,
+  run,
+  select,
+  speak,
+}: {
+  session: Session;
+  slide: Slide;
+  connected: boolean;
+  mutate: (command: Command) => Promise<unknown>;
+  run: (command: Command) => void;
+  select: (id: string) => void;
+  speak: (id: string) => void;
+}) {
+  const [representative, setRepresentative] = useState("");
+  const [representing, setRepresenting] = useState("");
+  return (
+    <section className="master-list">
+      <h2>Role assignments</h2>
+      <p>Names are shared across slides. New roles are separate assignments.</p>
+      <form
+        className="new-assignment"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          try {
+            const id = newId();
+            await mutate({
+              type: "assignment.create",
+              id,
+              representative,
+              representing,
+              slideId: slide.id,
+            });
+            setRepresentative("");
+            setRepresenting("");
+            select(id);
+          } catch {}
+        }}
+      >
+        <label>
+          Representative
+          <input
+            value={representative}
+            required
+            maxLength={200}
+            onChange={(e) => setRepresentative(e.target.value)}
+            placeholder="Name"
+          />
+        </label>
+        <label>
+          Representing
+          <input
+            value={representing}
+            maxLength={200}
+            onChange={(e) => setRepresenting(e.target.value)}
+            placeholder="May stay unnamed"
+          />
+        </label>
+        <button className="primary" disabled={!connected}>
+          Add assignment
+        </button>
+      </form>
+      <div className="assignment-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Assignment</th>
+              <th>Representative</th>
+              <th>Representing</th>
+              <th>Slides</th>
+              <th>On this slide</th>
+            </tr>
+          </thead>
+          <tbody>
+            {session.assignments.map((a) => (
+              <tr key={a.id}>
+                <td>
+                  <button
+                    onClick={() => {
+                      if (slide.pieces[a.id]) select(a.id);
+                    }}
+                    onDoubleClick={() => speak(a.id)}
+                  >
+                    {label(session, a.id, "both")}
+                  </button>
+                </td>
+                <td>
+                  <Field
+                    label={`Representative for ${a.id}`}
+                    value={a.representative}
+                    disabled={!connected}
+                    save={(value) =>
+                      run({
+                        type: "assignment.set",
+                        id: a.id,
+                        field: "representative",
+                        value,
+                      })
+                    }
+                  />
+                </td>
+                <td>
+                  <Field
+                    label={`Representing for ${a.id}`}
+                    value={a.representing}
+                    disabled={!connected}
+                    save={(value) =>
+                      run({
+                        type: "assignment.set",
+                        id: a.id,
+                        field: "representing",
+                        value,
+                      })
+                    }
+                  />
+                </td>
+                <td>
+                  {session.slides
+                    .map((s, i) => (s.pieces[a.id] ? i + 1 : null))
+                    .filter(Boolean)
+                    .join(", ") || "None"}
+                </td>
+                <td>
+                  {slide.pieces[a.id] ? (
+                    "Present"
+                  ) : (
+                    <button
+                      disabled={!connected}
+                      onClick={() =>
+                        run({
+                          type: "piece.add",
+                          slideId: slide.id,
+                          assignmentId: a.id,
+                        })
+                      }
+                    >
+                      Add to slide
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
+function TranscriptPanel({
+  session,
+  slide,
+  mode,
+  connected,
+  identity,
+  pending,
+  handle,
+  recover,
+  mutate,
+  run,
+}: {
+  session: Session;
+  slide: Slide;
+  mode: LabelMode;
+  connected: boolean;
+  identity: EditorIdentity;
+  pending: (id: string, update: Uint8Array) => void;
+  handle: (value: ComposerHandle | null) => void;
+  recover: (draft: LocalDraft) => void;
+  mutate: (command: Command) => Promise<unknown>;
+  run: (command: Command) => void;
+}) {
+  const [filter, setFilter] = useState<string | null>(null);
+  useEffect(() => setFilter(null), [slide.id]);
+  return (
+    <section className="transcript">
+      <div className="transcript-heading">
+        <h2>Conversation</h2>
+        <label>
+          Filter by assignment
+          <select
+            aria-label="Filter by assignment"
+            value={filter ?? ""}
+            onChange={(e) => setFilter(e.target.value || null)}
+          >
+            <option value="">Full slide transcript</option>
+            {session.assignments.map((a) => (
+              <option key={a.id} value={a.id}>
+                {label(session, a.id, mode)}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <div className="entries">
+        {filterEntries(slide, filter).map(({ entry, spoken, mentioned }) => (
+          <article key={entry.id} className="entry" data-entry-id={entry.id}>
+            <div className="entry-heading">
+              <strong>
+                {entry.speaker
+                  ? label(session, entry.speaker, mode)
+                  : "General note"}
+              </strong>
+              {filter && (
+                <span className="filter-match">
+                  {[spoken ? "Spoken by" : "", mentioned ? "Mentioned" : ""]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
+              <small>Editor: {entry.author}</small>
+            </div>
+            <SharedEntry
+              entry={entry}
+              session={session}
+              slideId={slide.id}
+              mode={mode}
+              identity={identity}
+              connected={connected}
+              pending={pending}
+            />
+            <details className="entry-options">
+              <summary>Entry options</summary>
+              <label>
+                Speaker
+                <select
+                  value={entry.speaker ?? ""}
+                  disabled={!connected}
+                  onChange={(e) =>
+                    run({
+                      type: "entry.speaker",
+                      slideId: slide.id,
+                      id: entry.id,
+                      speaker: e.target.value || null,
+                    })
+                  }
+                >
+                  <option value="">General note</option>
+                  <option value="facilitator">Facilitator</option>
+                  {session.assignments.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {label(session, a.id, mode)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                disabled={!connected}
+                onClick={() => {
+                  if (confirm("Delete this transcript entry?"))
+                    run({
+                      type: "entry.delete",
+                      slideId: slide.id,
+                      id: entry.id,
+                    });
+                }}
+              >
+                Delete entry
+              </button>
+            </details>
+          </article>
+        ))}
+        {!filterEntries(slide, filter).length && (
+          <div className="transcript-empty">
+            <h3>
+              {filter
+                ? "No linked conversation yet"
+                : "The conversation starts here"}
+            </h3>
+            <p>
+              {filter
+                ? "Speech and @ mentions appear here. Plain typed names are not linked."
+                : "Double-click a name on the board, or choose a speaker below. Both editors can refine saved entries together."}
+            </p>
+          </div>
+        )}
+      </div>
+      <Composer
+        key={slide.id}
+        session={session}
+        slideId={slide.id}
+        mode={mode}
+        identity={identity}
+        connected={connected}
+        onHandle={handle}
+        submit={async (id, speaker, text) => {
+          await mutate({
+            type: "entry.create",
+            slideId: slide.id,
+            id,
+            speaker,
+            text,
+          });
+        }}
+      />
+      <DraftDrawer
+        session={session}
+        mode={mode}
+        recover={(draft) => recover(draft)}
+      />
+    </section>
+  );
+}
+
 function Workspace({
   identity,
   sessionId,
@@ -216,7 +571,6 @@ function Workspace({
     () => (localStorage.getItem("constellation:labels") as LabelMode) || "both",
   );
   const [selected, setSelected] = useState<string | null>(null);
-  const [filter, setFilter] = useState<string | null>(null);
   const [textUpdates, setTextUpdates] = useState<Map<string, Uint8Array>>(
     new Map(),
   );
@@ -232,8 +586,6 @@ function Workspace({
       ) ?? false,
     [session, textUpdates],
   );
-  const [representative, setRepresentative] = useState("");
-  const [representing, setRepresenting] = useState("");
   const composer = useRef<ComposerHandle | null>(null);
   const handle = useCallback((value: ComposerHandle | null) => {
     composer.current = value;
@@ -266,7 +618,6 @@ function Workspace({
     if (slideId) {
       connection.sendPresence(slideId);
       setSelected(null);
-      setFilter(null);
     }
   }, [slideId, connection.sendPresence]);
   const run = (command: Command | "undo") => {
@@ -401,44 +752,19 @@ function Workspace({
             </select>
           </label>
         </div>
-        <nav className="slide-bar" aria-label="Slides">
-          <button
-            disabled={index === 0}
-            onClick={() => setSlideId(session.slides[index - 1].id)}
-          >
-            Previous
-          </button>
-          <div className="slide-tabs">
-            {session.slides.map((s, i) => (
-              <button
-                key={s.id}
-                aria-current={s.id === slide.id ? "page" : undefined}
-                onClick={() => setSlideId(s.id)}
-              >
-                {i + 1}. {s.title || "Untitled"}
-              </button>
-            ))}
-          </div>
-          <button
-            disabled={index === session.slides.length - 1}
-            onClick={() => setSlideId(session.slides[index + 1].id)}
-          >
-            Next
-          </button>
-          <button
-            className="primary"
-            disabled={!connected}
-            onClick={async () => {
-              const id = newId();
-              try {
-                await mutate({ type: "slide.create", id, after: slide.id });
-                setSlideId(id);
-              } catch {}
-            }}
-          >
-            Snapshot / new slide
-          </button>
-        </nav>
+        <SlideNavigation
+          session={session}
+          slideId={slide.id}
+          connected={connected}
+          navigate={setSlideId}
+          snapshot={async () => {
+            const id = newId();
+            try {
+              await mutate({ type: "slide.create", id, after: slide.id });
+              setSlideId(id);
+            } catch {}
+          }}
+        />
         <main className="session-main">
           <section className="arrangement">
             <div className="panel-heading">
@@ -629,276 +955,28 @@ function Workspace({
                 </div>
               </section>
             )}
-            <section className="master-list">
-              <h2>Role assignments</h2>
-              <p>
-                Names are shared across slides. New roles are separate
-                assignments.
-              </p>
-              <form
-                className="new-assignment"
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  try {
-                    const id = newId();
-                    await mutate({
-                      type: "assignment.create",
-                      id,
-                      representative,
-                      representing,
-                      slideId: slide.id,
-                    });
-                    setRepresentative("");
-                    setRepresenting("");
-                    setSelected(id);
-                  } catch {}
-                }}
-              >
-                <label>
-                  Representative
-                  <input
-                    value={representative}
-                    required
-                    maxLength={200}
-                    onChange={(e) => setRepresentative(e.target.value)}
-                    placeholder="Name"
-                  />
-                </label>
-                <label>
-                  Representing
-                  <input
-                    value={representing}
-                    maxLength={200}
-                    onChange={(e) => setRepresenting(e.target.value)}
-                    placeholder="May stay unnamed"
-                  />
-                </label>
-                <button className="primary" disabled={!connected}>
-                  Add assignment
-                </button>
-              </form>
-              <div className="assignment-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Assignment</th>
-                      <th>Representative</th>
-                      <th>Representing</th>
-                      <th>Slides</th>
-                      <th>On this slide</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {session.assignments.map((a) => (
-                      <tr key={a.id}>
-                        <td>
-                          <button
-                            onClick={() => {
-                              if (slide.pieces[a.id]) setSelected(a.id);
-                            }}
-                            onDoubleClick={() =>
-                              composer.current?.focusEmpty(a.id)
-                            }
-                          >
-                            {label(session, a.id, "both")}
-                          </button>
-                        </td>
-                        <td>
-                          <Field
-                            label={`Representative for ${a.id}`}
-                            value={a.representative}
-                            disabled={!connected}
-                            save={(value) =>
-                              run({
-                                type: "assignment.set",
-                                id: a.id,
-                                field: "representative",
-                                value,
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
-                          <Field
-                            label={`Representing for ${a.id}`}
-                            value={a.representing}
-                            disabled={!connected}
-                            save={(value) =>
-                              run({
-                                type: "assignment.set",
-                                id: a.id,
-                                field: "representing",
-                                value,
-                              })
-                            }
-                          />
-                        </td>
-                        <td>
-                          {session.slides
-                            .map((s, i) => (s.pieces[a.id] ? i + 1 : null))
-                            .filter(Boolean)
-                            .join(", ") || "None"}
-                        </td>
-                        <td>
-                          {slide.pieces[a.id] ? (
-                            "Present"
-                          ) : (
-                            <button
-                              disabled={!connected}
-                              onClick={() =>
-                                run({
-                                  type: "piece.add",
-                                  slideId: slide.id,
-                                  assignmentId: a.id,
-                                })
-                              }
-                            >
-                              Add to slide
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </section>
-          <section className="transcript">
-            <div className="transcript-heading">
-              <h2>Conversation</h2>
-              <label>
-                Filter by assignment
-                <select
-                  aria-label="Filter by assignment"
-                  value={filter ?? ""}
-                  onChange={(e) => setFilter(e.target.value || null)}
-                >
-                  <option value="">Full slide transcript</option>
-                  {session.assignments.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {label(session, a.id, mode)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-            <div className="entries">
-              {filterEntries(slide, filter).map(
-                ({ entry, spoken, mentioned }) => (
-                  <article
-                    key={entry.id}
-                    className="entry"
-                    data-entry-id={entry.id}
-                  >
-                    <div className="entry-heading">
-                      <strong>
-                        {entry.speaker
-                          ? label(session, entry.speaker, mode)
-                          : "General note"}
-                      </strong>
-                      {filter && (
-                        <span className="filter-match">
-                          {[
-                            spoken ? "Spoken by" : "",
-                            mentioned ? "Mentioned" : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" · ")}
-                        </span>
-                      )}
-                      <small>Editor: {entry.author}</small>
-                    </div>
-                    <SharedEntry
-                      entry={entry}
-                      session={session}
-                      slideId={slide.id}
-                      mode={mode}
-                      identity={connection.identity}
-                      connected={connected}
-                      pending={pending}
-                    />
-                    <details className="entry-options">
-                      <summary>Entry options</summary>
-                      <label>
-                        Speaker
-                        <select
-                          value={entry.speaker ?? ""}
-                          disabled={!connected}
-                          onChange={(e) =>
-                            run({
-                              type: "entry.speaker",
-                              slideId: slide.id,
-                              id: entry.id,
-                              speaker: e.target.value || null,
-                            })
-                          }
-                        >
-                          <option value="">General note</option>
-                          <option value="facilitator">Facilitator</option>
-                          {session.assignments.map((a) => (
-                            <option key={a.id} value={a.id}>
-                              {label(session, a.id, mode)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <button
-                        disabled={!connected}
-                        onClick={() => {
-                          if (confirm("Delete this transcript entry?"))
-                            run({
-                              type: "entry.delete",
-                              slideId: slide.id,
-                              id: entry.id,
-                            });
-                        }}
-                      >
-                        Delete entry
-                      </button>
-                    </details>
-                  </article>
-                ),
-              )}
-              {!filterEntries(slide, filter).length && (
-                <div className="transcript-empty">
-                  <h3>
-                    {filter
-                      ? "No linked conversation yet"
-                      : "The conversation starts here"}
-                  </h3>
-                  <p>
-                    {filter
-                      ? "Speech and @ mentions appear here. Plain typed names are not linked."
-                      : "Double-click a name on the board, or choose a speaker below. Both editors can refine saved entries together."}
-                  </p>
-                </div>
-              )}
-            </div>
-            <Composer
-              key={slide.id}
+            <AssignmentPanel
               session={session}
-              slideId={slide.id}
-              mode={mode}
-              identity={connection.identity}
+              slide={slide}
               connected={connected}
-              onHandle={handle}
-              submit={async (id, speaker, text) => {
-                await mutate({
-                  type: "entry.create",
-                  slideId: slide.id,
-                  id,
-                  speaker,
-                  text,
-                });
-              }}
-            />
-            <DraftDrawer
-              session={session}
-              mode={mode}
-              recover={(draft) => composer.current?.recover(draft)}
+              mutate={mutate}
+              run={run}
+              select={setSelected}
+              speak={(id) => composer.current?.focusEmpty(id)}
             />
           </section>
+          <TranscriptPanel
+            session={session}
+            slide={slide}
+            mode={mode}
+            connected={connected}
+            identity={connection.identity}
+            pending={pending}
+            handle={handle}
+            recover={(draft) => composer.current?.recover(draft)}
+            mutate={mutate}
+            run={run}
+          />
         </main>
       </div>
       <PrintSession session={session} mode={mode} />
