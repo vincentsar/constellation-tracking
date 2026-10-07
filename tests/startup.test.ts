@@ -59,7 +59,9 @@ test("the host startup command displays network URLs and reopens its saved sessi
     await expect
       .poll(() => output, { timeout: 8000, message: errors })
       .toContain("Constellation tracker:");
-    expect(output).toMatch(/Local network: http:\/\/\d+\.\d+\.\d+\.\d+:\d+/);
+    await expect
+      .poll(() => output, { timeout: 8000, message: errors })
+      .toMatch(/Local network: http:\/\/\d+\.\d+\.\d+\.\d+:\d+/);
     const identity = (await (
       await fetch(`${origin}/api/editors`, {
         method: "POST",
