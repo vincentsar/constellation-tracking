@@ -1,0 +1,52 @@
+FAIL bold Yjs projection includes empty mark attrs, rejected by validation: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "attrs"
+    ],
+    "path": [
+      "marks",
+      0
+    ],
+    "message": "Unrecognized key: \"attrs\""
+  }
+]
+FAIL italic Yjs projection includes empty mark attrs, rejected by validation: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "attrs"
+    ],
+    "path": [
+      "marks",
+      0
+    ],
+    "message": "Unrecognized key: \"attrs\""
+  }
+]
+FAIL strike Yjs projection includes empty mark attrs, rejected by validation: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "attrs"
+    ],
+    "path": [
+      "marks",
+      0
+    ],
+    "message": "Unrecognized key: \"attrs\""
+  }
+]
+FAIL code Yjs projection includes empty mark attrs, rejected by validation: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "attrs"
+    ],
+    "path": [
+      "marks",
+      0
+    ],
+    "message": "Unrecognized key: \"attrs\""
+  }
+]

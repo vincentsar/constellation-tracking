@@ -1,0 +1,6 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+LP OS: Microsoft Windows 11 Home 10.0.22631 22631
+LP Edge installed: 154.0.4258.53
+Owned LP browser PID: 5812

@@ -54,7 +54,11 @@ export async function buildHost(options: {
   storageOptions?: StorageOptions;
 }) {
   parseRequireCode(options.requireCode);
-  const app = Fastify({ bodyLimit: 30_000_000, logger: false });
+  const app = Fastify({
+    bodyLimit: 30_000_000,
+    logger: false,
+    forceCloseConnections: true,
+  });
   const storage = new SessionStorage(
     path.resolve(options.directory),
     options.storageOptions,

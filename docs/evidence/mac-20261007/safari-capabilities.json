@@ -1,0 +1,20 @@
+{
+  "safari:platformVersion": "26.5",
+  "safari:automaticInspection": false,
+  "webkit:WebRTC": {
+    "DisableICECandidateFiltering": false,
+    "DisableInsecureMediaCapture": false
+  },
+  "webkit:alwaysAllowAutoplay": false,
+  "browserVersion": "26.5",
+  "strictFileInteractability": false,
+  "browserName": "Safari",
+  "safari:useSimulator": false,
+  "safari:automaticProfiling": false,
+  "setWindowRect": true,
+  "acceptInsecureCerts": false,
+  "safari:platformBuildVersion": "25F71",
+  "safari:experimentalWebSocketUrl": false,
+  "platformName": "macOS",
+  "safari:diagnose": false
+}

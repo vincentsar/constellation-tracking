@@ -1,0 +1,12 @@
+2026-10-07T01:03:07.410Z TESTED SHA 1a3b4107488be1fc7f61e6b689039692f324c9c5; host YH 192.168.0.129; Chrome on YH 155.0.8059.39; Edge on separate physical LP 192.168.0.107 154.0.4258.53
+2026-10-07T01:03:10.949Z JOIN windows host: YH Chrome Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 / LP Edge Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0
+2026-10-07T01:03:11.182Z PASS direct browser app HTTP remoteIPAddress=192.168.0.129; numeric LAN origin http://192.168.0.129:3213; SSH forwards only browser/control ports 9333–9335.
+2026-10-07T01:03:12.744Z PASS concurrent entry edits, identical final text, visible caret, own undo preserving collaborator and redo.
+2026-10-07T01:03:13.311Z PASS linked mention correction, ordinary-word preservation, no-duplicate filter and independent labels.
+2026-10-07T01:03:17.588Z PASS circle/triangle/square, fractional facing, both rotation buttons, pointer rotation and movement on YH Chrome over LAN.
+2026-10-07T01:03:17.980Z PASS simultaneous entries exactly once, same host chronology and distinct speaker/editor attribution.
+2026-10-07T01:03:18.626Z PASS copied arrangement, empty initial transcript, title and independent slide navigation/presence.
+2026-10-07T01:03:22.589Z PASS actual host process stop/restart, both physical-browser disconnect/reconnect, preserved composer draft, exact saved source/attribution, no duplicate entries.
+2026-10-07T01:03:24.965Z PASS mouse mention selection and 80-row long transcript saved on windows; synthetic artifacts retained locally.
+2026-10-07T01:03:24.965Z COMPLETE separate physical Windows computers over LAN; concurrent text/carets/undo, shapes/rotation, mentions/filters, simultaneous entry order, slides, host restart and draft recovery.
+Evidence annotation: the shared harness message lists YH control ports 9333–9335. The LP Edge control connection additionally used SSH port forwarding on 9336; app traffic was direct to YH LAN port 3213.

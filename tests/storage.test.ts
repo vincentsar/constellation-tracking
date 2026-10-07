@@ -131,6 +131,34 @@ test("backup restoration preserves collaboration identity, attribution, and link
   await expect(storage.restore(bad)).rejects.toThrow("does not match");
   expect(await storage.list()).toHaveLength(2);
 });
+test("supported formatted text survives Yjs projection, persistence, and separate restoration", async () => {
+  const dir = await directory();
+  const original = fixture();
+  const entry = original.slides[0].entries[0];
+  const doc = seedText({
+    type: "doc",
+    content: [
+      {
+        type: "paragraph",
+        content: ["bold", "italic", "strike", "code"].map((type) => ({
+          type: "text",
+          text: type,
+          marks: [{ type }],
+        })),
+      },
+    ],
+  });
+  entry.text = projectText(doc);
+  entry.checkpoint = checkpoint(doc);
+  doc.destroy();
+  const storage = store(dir);
+  await storage.create(original);
+  const reopened = await storage.read(original.id);
+  const restored = await storage.restore(reopened);
+  expect(restored.id).not.toBe(original.id);
+  expect(restored.slides[0].entries[0]).toEqual(entry);
+  expect((await storage.read(original.id)).slides[0].entries[0]).toEqual(entry);
+});
 test("master corrections regenerate both-label Markdown and PNG for every stable slide", async () => {
   const dir = await directory();
   const session = fixture();

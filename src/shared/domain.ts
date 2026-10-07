@@ -359,7 +359,10 @@ export function validateRichText(value: unknown, session: Session): RichText {
         marks: z
           .array(
             z
-              .object({ type: z.enum(["bold", "italic", "strike", "code"]) })
+              .object({
+                type: z.enum(["bold", "italic", "strike", "code"]),
+                attrs: z.object({}).strict().optional(),
+              })
               .strict(),
           )
           .optional(),

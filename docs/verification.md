@@ -9,9 +9,9 @@ Final verification ran on Windows with Node **24.19.0**. Dependencies are pinned
 | Check                                       | Result                                                                                                    |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `npm.cmd run typecheck`                     | Passed                                                                                                    |
-| `npm.cmd test` (includes build)             | 6 files, 18 tests passed                                                                                  |
-| `npm.cmd run test:browser` (includes build) | 8 tests passed                                                                                            |
-| Desktop Chrome channel                      | 154.0.8037.98, Windows                                                                                    |
+| `npm.cmd test` (includes build)             | 7 files, 22 tests passed after returned fixes and speaker shortcut                                         |
+| `npm.cmd test` build and final `npx.cmd playwright test --output=test-results/critique-confirmation` | 14 tests passed, Chrome/Edge; final run 50.5 seconds                                  |
+| Desktop Chrome channel                      | 155.0.8059.39, Windows                                                                                    |
 | Desktop Edge channel                        | 154.0.4258.53, Windows                                                                                    |
 | Source publication interruption             | Child writer terminated after temporary-file fsync and before rename; previous complete revision reopened |
 | Startup/restart                             | Actual Node entry point printed local/network URLs; persisted session reopened after process restart      |
@@ -32,12 +32,122 @@ The interface detector reported documentation advisories for secondary colors/ty
 
 ## Remaining required acceptance evidence
 
-**Overall verified remains false.** This workspace cannot establish:
+### Returned Mac verification branch
 
-- Actual macOS host startup, source publication/reopen, and PNG generation.
-- Actual desktop Safari workflow, including live editing, pointer rotation, mention selection, and printing.
-- Two physical computers joining across the LAN and mixed Mac/Windows collaboration.
-- Backup transfer/restoration between Windows and macOS hosts.
-- Real browser print preview/PDF or printer results on each target OS (automated CSS print rendering passed).
+On 2026-10-07, the user supplied branch
+`verification/constellation-tracker-mac-20261007`, commit
+`e2c28fd45af6203ce4732d6dcbdbc90317e13055`, and report `docs/mac-verification.md`.
+The branch includes fixes for a startup test race (`da08320`), shutdown
+hang (`0baa36b`), and formatted-text rejection (`1a3b410`).
+
+The current task checkpoint is `1cc5b70`. Retrieval initially failed under network
+restrictions; permission and coordinator fetching subsequently made the returned
+commit available. Its four source/test files, report, and committed evidence logs
+were applied as file changes in this task worktree, without merging branches.
+The report and representative physical LAN/Safari logs were inspected. They
+establish macOS source/reopen/PNG, actual Safari collaboration, physical mixed-OS
+LAN workflows, bidirectional backup restoration, and real Chrome/Edge PDF output
+at tested application SHA `1a3b410`. The report explicitly retains an actual
+Safari printing blocker; its results do not establish full verification.
+
+### Speaker shortcut follow-up
+
+The user's subsequent request adds leading `@facilitator:` / `@Name:` speaker
+selection to the new-entry composer. A recognized prefix is removed while speech
+and stable speaker attribution remain; the selected speaker persists for following
+entries. Duplicate representative names require a numbered label or a selected
+linked assignment followed by a colon. Unknown/ambiguous names remain text;
+inline mentions and saved-entry editing do not select a new speaker. Domain tests
+cover recognition, ambiguity, incomplete prefixes, and stale linked references.
+Browser tests exercise typed and pasted prefixes, actual entry attribution,
+numbered roles, linked-prefix consumption, and preservation of inline mentions.
+
+Focused startup/storage/shortcut checks passed (11 tests); explicit typecheck and
+the full unit/build suite passed (22 tests). The focused shortcut browser workflow
+passed in both Chrome and Edge. The complete browser result is recorded below.
+
+The initial shortcut browser run passed 10/10. The subsequent dropdown request
+was implemented and verified as described below. Imported source/test blob hashes
+match the returned branch exactly for all four fix files. `git diff --check`
+passes. No commit, merge, or push was performed; board checkpoint and independent
+review remain outstanding.
+
+### Keyboard dropdown follow-up
+
+The dropdown searches representative and representation text, including multiword
+queries. Combined labels and automatic role numbers preserve assignment identity.
+Up/Down wraps through all matches; Enter selects; Escape dismisses. Facilitator
+appears only at the start of a new-entry draft and inserts a text prefix rather
+than an invalid assignment mention. A colon consumes the leading selection and
+updates the speaker. Direct unambiguous representation prefixes are supported;
+duplicate representations remain text until an explicit assignment is chosen.
+
+The former 12-result cutoff was removed. The highlighted row scrolls into view,
+and the popup stays inside the viewport. It exposes listbox/option selection and
+the active option through the editor's ARIA attributes. These are implementation
+and browser checks, not a claim of actual screen-reader testing.
+
+Before the design critique, verification after this request: full build/typecheck and **22 unit tests
+passed**, then **12/12 Chrome/Edge browser tests passed in 42.9 seconds**. A focused
+Chrome dropdown run was repeated three times after the Escape/keyboard-deletion
+flow was made explicit; all three passed. Browser assertions include both search
+fields, multiword queries, facilitator selection, Up/Down/Enter, no-match/Escape,
+reopening, a 15-item list, and visibility/focus at its final row.
+
+Desktop, laptop, and long-list screenshots were inspected together: popup rows,
+selection contrast, wrapped instructions, and fresh-open viewport bounds were
+usable within the existing paper/olive design. Subsequent independent assessment
+found open-menu viewport/focus changes that this initial batch did not cover.
+
+### Independent Impeccable critique and corrections
+
+The user authorized two independent design assessment agents and correction of
+their findings. Assessment A (`/root/dropdown_design_a`) reviewed source and its
+own live Chrome context without detector/B findings. Assessment B
+(`/root/dropdown_evidence_b`) performed one source detector scan and inspected a
+separate live Chrome context. A completed before B's findings entered synthesis.
+These are dropdown/composer design assessments, not the board's Standards/Spec
+reviews. The assessed baseline score was **30/40**; no fresh independent post-fix
+score is claimed.
+
+Corrected findings: popup placement now follows scroll/resize and available
+height; active rows remain visible in reduced-height windows; focus loss dismisses
+the panel and clears its editor references; the empty composer has a real visible
+prompt; editor autocomplete/popup semantics and polite result/no-match status
+announcements are present; no-match hints no longer promise selection. Click and
+keyboard activation share the selection handler. The popup's redundant outer
+border was removed while preserving its soft shadow and documented visual world.
+
+The CLI detector returned **one advisory** for a collaborator caret color outside
+the dropdown, not a dropdown usability defect. B's injected headless browser
+overlay reported five page-level patterns; generic font/palette warnings were
+evaluated against the documented design instead of used to replace it. There was
+no user-visible overlay. Actual screen-reader output was not tested.
+
+The new browser regression failed before implementation for the missing prompt.
+After corrections, **6 focused browser cases passed**. Final explicit typecheck,
+build, **22 unit tests**, and **14 Chrome/Edge browser tests passed**, with the final
+browser run taking **50.5 seconds**. This run includes scroll/resize anchoring,
+reduced-height active-row visibility, Tab dismissal/reference cleanup, prompt
+visibility, autocomplete/status semantics, and click activation. No source changes
+followed the passing full suite. Final desktop/laptop captures and empty-composer
+capture were inspected in one confirmation batch. Baseline scripts/screenshots
+remain in ignored `test-results/impeccable-a` and `test-results/impeccable-b`; final
+captures are in `test-results/critique-confirmation`.
+
+The combined [critique snapshot](../.impeccable/critique/2026-10-07T02-33-17Z__src-client-transcript-tsx.md)
+records the score, evidence, findings, and corrections. This was its first run,
+so no trend is established. The parent-owned temporary critique host was stopped;
+both agents closed their own browsers, and B stopped its own overlay helper.
+Temporary snapshot body was removed. Board checkpoint, independent Standards/Spec
+review, and final acceptance remain outstanding. No commit, merge, or push was
+performed by this implementation worker.
+
+**Overall verified remains false.** Remaining required evidence:
+
+- Actual Safari print preview/PDF output in all three label modes, as explicitly
+  blocked in [mac-verification.md](mac-verification.md).
+- Actual Safari verification of the newly added speaker shortcut and keyboard
+  dropdown. Earlier Safari collaboration results predate these composer changes.
 
 Use [manual-verification.md](manual-verification.md) to capture those results. The optional join-code branch remains deferred as allowed by the accepted specification: default false is functional; true refuses startup. The original interview specification and ADRs were preserved.

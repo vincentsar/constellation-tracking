@@ -1,0 +1,44 @@
+
+ RUN  v5.0.3 /Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007
+
+ ❯ tests/storage.test.ts (7 tests | 1 failed | 6 skipped) 15ms
+   × supported formatted text survives Yjs projection, persistence, and separate restoration 14ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/storage.test.ts > supported formatted text survives Yjs projection, persistence, and separate restoration
+ZodError: [
+  {
+    "code": "unrecognized_keys",
+    "keys": [
+      "attrs"
+    ],
+    "path": [
+      "marks",
+      0
+    ],
+    "message": "Unrecognized key: \"attrs\""
+  }
+]
+ ❯ check src/shared/domain.ts:368:8
+    366|       })
+    367|       .strict()
+    368|       .parse(value);
+       |        ^
+    369|     if (
+    370|       node.type === "mention" &&
+ ❯ src/shared/domain.ts:376:57
+ ❯ check src/shared/domain.ts:376:46
+ ❯ src/shared/domain.ts:376:57
+ ❯ check src/shared/domain.ts:376:46
+ ❯ validateRichText src/shared/domain.ts:378:18
+ ❯ validateSession src/server/validation.ts:91:20
+ ❯ SessionStorage.create src/server/storage.ts:119:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 skipped (7)
+   Start at  08:55:42
+   Duration  275ms (import 63%, transform 27%, tests 8%, worker 1%)

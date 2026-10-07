@@ -1,0 +1,5 @@
+Preview marker: {"revision":4,"slides":["2ab74c86-32b5-416b-bb74-545d0de112e6","later-stage"]}
+PASS Markdown/PNG/revision: 2ab74c86-32b5-416b-bb74-545d0de112e6 1000 700 4
+PASS Markdown/PNG/revision: later-stage 1000 700 4
+PASS source equals disk; separate Mac restore retains checkpoint/mentions/attribution; tampered backup rejected without list changes.
+Restart fixture: 9220a0be-fc8a-4ce8-b005-e4a841e994a1 PNG: sessions/9220a0be-fc8a-4ce8-b005-e4a841e994a1/slides/2ab74c86-32b5-416b-bb74-545d0de112e6/board.png

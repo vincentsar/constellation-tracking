@@ -542,13 +542,11 @@ td button {
   position: fixed;
   z-index: 20;
   background: var(--paper);
-  border: 1px solid var(--line);
   box-shadow: 0 5px 20px #263a3720;
   padding: 5px;
   border-radius: 6px;
-  min-width: 180px;
-  max-height: 280px;
-  overflow: auto;
+  width: 330px;
+  max-width: calc(100vw - 24px);
   font-size: 13px;
 }
 .mention-menu button {
@@ -556,6 +554,38 @@ td button {
   border: 0;
   width: 100%;
   text-align: left;
+  padding: 9px 10px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.mention-options {
+  position: relative;
+  max-height: min(240px, 40vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.mention-menu-heading,
+.mention-menu-hint {
+  padding: 8px 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.mention-menu-heading {
+  border-bottom: 1px solid var(--line);
+}
+.mention-menu-hint {
+  border-top: 1px solid var(--line);
+}
+.mention-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 .mention-menu [aria-selected="true"] {
   background: #e3e9d9;
@@ -616,8 +646,17 @@ td button {
   min-height: 110px;
   padding: 16px 0;
 }
-.composer .tiptap p:only-child:empty::before {
-  content: attr(data-placeholder);
+.composer-input {
+  position: relative;
+}
+.composer-placeholder {
+  position: absolute;
+  top: 16px;
+  left: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+  pointer-events: none;
 }
 .composer-footer {
   display: flex;

@@ -1,0 +1,5 @@
+
+> constellation-tracker@0.1.0 setup
+> node scripts/setup.mjs
+
+Created .env with URL-only joining and local session storage.

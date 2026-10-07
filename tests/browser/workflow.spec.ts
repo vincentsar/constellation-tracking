@@ -32,6 +32,7 @@ async function create(page: Page, name: string) {
   await expect(page.getByText(/Saved on host/)).toBeVisible();
 }
 async function assignment(page: Page, name: string, role: string) {
+  const pieceCount = await page.locator(".piece-label").count();
   await page
     .locator(".new-assignment")
     .getByLabel("Representative", { exact: true })
@@ -41,8 +42,9 @@ async function assignment(page: Page, name: string, role: string) {
     .getByLabel("Representing", { exact: true })
     .fill(role);
   await page.getByRole("button", { name: "Add assignment" }).click();
+  await expect(page.locator(".piece-label")).toHaveCount(pieceCount + 1);
   await expect(
-    page.locator(".piece-label").filter({ hasText: name }),
+    page.locator(".piece-label").filter({ hasText: name }).last(),
   ).toBeVisible();
 }
 test("two editors merge entry text, follow mentions, navigate independently and preserve offline drafts", async ({
@@ -330,4 +332,232 @@ test("a plain HTTP network origin supports assignment creation without secure-co
   expect(
     requests.every((url) => new URL(url).hostname === "constellation.test"),
   ).toBe(true);
+});
+
+test("dropdown stays anchored through viewport changes, dismisses on focus loss and explains empty states", async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await join(page, "Design regression editor");
+  await create(page, `Dropdown design ${Date.now()}`);
+  await assignment(page, "Alice", "Mother");
+  const composer = page.getByRole("textbox", { name: "New transcript entry" });
+  const placeholder = page.locator(".composer-placeholder");
+  await expect(placeholder).toBeVisible();
+  await expect(placeholder).toHaveAttribute("aria-hidden", "true");
+  await expect(composer).toHaveAttribute(
+    "aria-placeholder",
+    "Record what was said.",
+  );
+  await composer.pressSequentially("@Alice");
+  await expect(placeholder).toHaveCount(0);
+  const menu = page.getByRole("listbox", { name: "Assignment mentions" });
+  await expect(menu.getByRole("option")).toHaveCount(1);
+  await expect(composer).toHaveAttribute("aria-autocomplete", "list");
+  await expect(composer).toHaveAttribute("aria-haspopup", "listbox");
+  await page.screenshot({ path: testInfo.outputPath("critique-desktop.png") });
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await expect
+    .poll(() => menu.evaluate((el) => el.getBoundingClientRect().right))
+    .toBeLessThanOrEqual(1012);
+  await page.evaluate(() => window.scrollBy(0, 60));
+  const anchor = composer.locator("[data-decoration-id]");
+  await expect
+    .poll(async () => {
+      const popup = await menu.boundingBox();
+      const caret = await anchor.boundingBox();
+      if (!popup || !caret) return Infinity;
+      return Math.min(
+        Math.abs(popup.y - caret.y - caret.height),
+        Math.abs(popup.y + popup.height - caret.y),
+      );
+    })
+    .toBeLessThanOrEqual(8);
+  await page.screenshot({ path: testInfo.outputPath("critique-laptop.png") });
+  await composer.press("Tab");
+  await expect(
+    page.getByRole("button", { name: "Save entry", exact: true }),
+  ).toBeFocused();
+  await expect(menu).toHaveCount(0);
+  await expect(composer).not.toHaveAttribute("aria-controls", /.+/);
+  await expect(composer).not.toHaveAttribute("aria-activedescendant", /.+/);
+  await expect(composer).toHaveText("@Alice");
+  await composer.click();
+  await composer.press("ControlOrMeta+A");
+  await composer.press("Backspace");
+  await expect(placeholder).toBeVisible();
+  await composer.pressSequentially("@Unknown");
+  await expect(menu).toContainText("No matching assignments");
+  await expect(
+    page.getByRole("status").filter({ hasText: "No matching assignments" }),
+  ).toHaveCount(1);
+  await expect(page.locator(".mention-menu-hint")).not.toContainText(
+    "Enter to select",
+  );
+  await composer.press("Escape");
+  await composer.press("ControlOrMeta+A");
+  await composer.press("Backspace");
+  await composer.pressSequentially("@Alice");
+  await expect(menu.getByRole("option")).toHaveCount(1);
+  const choice = menu.getByRole("option").first();
+  await expect(choice).toHaveAttribute("tabindex", "-1");
+  await choice.evaluate((el: HTMLButtonElement) => el.click());
+  await expect(menu).toHaveCount(0);
+  await expect(composer.locator("[data-assignment-id]")).toHaveCount(1);
+  await composer.press(":");
+  await expect(
+    page.locator(".composer").getByRole("combobox").locator("option:checked"),
+  ).toHaveText("Alice (Mother)");
+});
+
+test("representative and representation dropdowns support arrow selection, facilitator and long lists", async ({
+  page,
+}, testInfo) => {
+  await join(page, "Keyboard editor");
+  await create(page, `Dropdown ${Date.now()}`);
+  await assignment(page, "Alice", "Mother");
+  await assignment(page, "Alice", "Fear");
+  await assignment(page, "Cara", "Inner child");
+  const composer = page.getByRole("textbox", { name: "New transcript entry" });
+  const speaker = page.locator(".composer").getByRole("combobox");
+  const menu = page.getByRole("listbox", { name: "Assignment mentions" });
+  await composer.press("@");
+  await expect(
+    menu.getByRole("option", { name: "Facilitator", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await composer.press("Enter");
+  await composer.press(":");
+  await expect(speaker).toHaveValue("facilitator");
+  await expect(composer).toHaveText("");
+  await composer.pressSequentially("@Alice");
+  await expect(menu.getByRole("option")).toHaveCount(2);
+  await page.screenshot({ path: testInfo.outputPath("dropdown-desktop.png") });
+  await composer.press("ArrowDown");
+  await expect(
+    menu.getByRole("option", { name: "Alice 2 (Fear)" }),
+  ).toHaveAttribute("aria-selected", "true");
+  await composer.press("ArrowUp");
+  await expect(
+    menu.getByRole("option", { name: "Alice 1 (Mother)" }),
+  ).toHaveAttribute("aria-selected", "true");
+  await composer.press("Enter");
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Alice 1 (Mother)",
+  );
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await composer.pressSequentially("@Fear");
+  await expect(menu.getByRole("option")).toHaveCount(1);
+  await page.screenshot({ path: testInfo.outputPath("dropdown-laptop.png") });
+  await composer.press("Enter");
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText("Alice 2 (Fear)");
+  await composer.pressSequentially("@Inner child");
+  await expect(
+    menu.getByRole("option", { name: "Cara (Inner child)" }),
+  ).toBeVisible();
+  await composer.press("Enter");
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Cara (Inner child)",
+  );
+  await composer.pressSequentially("@Unknown");
+  await expect(menu).toContainText("No matching assignments");
+  await composer.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await composer.press("ControlOrMeta+A");
+  await composer.press("Backspace");
+  await expect(composer).toHaveText("");
+  for (let i = 1; i <= 11; i++)
+    await assignment(page, `Guest ${i}`, `Role ${i}`);
+  await composer.click();
+  await composer.press("@");
+  await expect(menu.getByRole("option")).toHaveCount(15);
+  await composer.press("ArrowUp");
+  const last = menu.getByRole("option", { name: "Guest 11 (Role 11)" });
+  await expect(last).toHaveAttribute("aria-selected", "true");
+  await expect(last).toBeInViewport();
+  await page.setViewportSize({ width: 1024, height: 480 });
+  await expect(last).toBeInViewport();
+  await expect
+    .poll(() => menu.evaluate((el) => el.getBoundingClientRect().bottom))
+    .toBeLessThanOrEqual(468);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await page.screenshot({
+    path: testInfo.outputPath("dropdown-long-list.png"),
+  });
+  await expect(composer).toBeFocused();
+  await composer.press("Enter");
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Guest 11 (Role 11)",
+  );
+  await composer.pressSequentially("Last assignment speaks");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect(page.locator(".entry")).toContainText("Guest 11 (Role 11)");
+});
+
+test("leading colon shortcuts select speakers while inline mentions and ambiguous names retain their identities", async ({
+  page,
+}) => {
+  await join(page, "Note taker");
+  await create(page, `Speaker shortcuts ${Date.now()}`);
+  await assignment(page, "Alice", "Mother");
+  const composer = page.getByRole("textbox", { name: "New transcript entry" });
+  const speaker = page.locator(".composer").getByRole("combobox");
+  await composer.pressSequentially("@facilitator:");
+  await expect(speaker).toHaveValue("facilitator");
+  await expect(composer).toHaveText("");
+  await composer.pressSequentially("Welcome");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect(page.locator(".entry").first()).toContainText("Facilitator");
+  await composer.pressSequentially("@Alice:");
+  await expect(speaker.locator("option:checked")).toHaveText("Alice (Mother)");
+  await composer.pressSequentially("I feel calm");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(2);
+  await expect(page.locator(".entry").nth(1)).toContainText("Alice (Mother)");
+  await expect(page.locator(".entry .tiptap").nth(1)).toHaveText("I feel calm");
+
+  await assignment(page, "Alice", "Fear");
+  await composer.fill("@Alice: ambiguous");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Alice 1 (Mother)",
+  );
+  await expect(composer).toHaveText("@Alice: ambiguous");
+  await composer.fill("@Alice 2: I feel afraid");
+  await expect(speaker.locator("option:checked")).toHaveText("Alice 2 (Fear)");
+  await expect(composer).toHaveText("I feel afraid");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(3);
+
+  await composer.press("@");
+  await page
+    .getByRole("listbox")
+    .getByRole("option", { name: "Alice 1 (Mother)", exact: true })
+    .click();
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Alice 1 (Mother)",
+  );
+  await expect(composer).toHaveText("");
+  await composer.pressSequentially("Speaking about ");
+  await composer.press("@");
+  await page
+    .getByRole("listbox")
+    .getByRole("option", { name: "Alice 2 (Fear)", exact: true })
+    .click();
+  await composer.press(":");
+  await expect(speaker.locator("option:checked")).toHaveText(
+    "Alice 1 (Mother)",
+  );
+  await expect(composer.locator("[data-assignment-id]")).toHaveCount(1);
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(4);
+  await expect(
+    page.locator(".entry .tiptap").last().locator("[data-assignment-id]"),
+  ).toHaveCount(1);
+  await expect(page.getByText(/Saved on host/)).toBeVisible();
 });

@@ -1,0 +1,14 @@
+Constellation tracker: http://localhost:3210
+Local network: http://192.168.0.141:3210
+Local network: http://100.75.247.76:3210
+Keep this host running while editors are connected. Sessions save automatically.
+Fontconfig error: Cannot load default config file: File not found
+
+> constellation-tracker@0.1.0 start
+> tsx src/server/main.ts
+
+Constellation tracker: http://localhost:3210
+Local network: http://192.168.0.141:3210
+Local network: http://100.75.247.76:3210
+Keep this host running while editors are connected. Sessions save automatically.
+Fontconfig error: Cannot load default config file: File not found

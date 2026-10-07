@@ -1,0 +1,36 @@
+Constellation tracker: http://localhost:3214
+Local network: http://192.168.0.141:3214
+Local network: http://100.75.247.76:3214
+Keep this host running while editors are connected. Sessions save automatically.
+2026-10-07T00:48:56.382Z TESTED SHA Mac 0baa36bcbe1601d36c985593404a7f34f0290c76; Windows clone 0baa36bcbe1601d36c985593404a7f34f0290c76; Brave runtime Chromium 154.0.8037.93; Edge 154.0.4258.53; Chrome 155.0.8059.39
+Fontconfig error: Cannot load default config file: File not found
+2026-10-07T00:48:59.884Z JOIN mac host: Mac Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 / Windows Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0
+2026-10-07T00:49:00.189Z PASS direct browser app HTTP remoteIPAddress=192.168.0.141; numeric LAN origin http://192.168.0.141:3214; SSH forwards only browser/control ports 9333–9335.
+2026-10-07T00:49:00.917Z PASS concurrent entry edits, identical final text, visible caret, own undo preserving collaborator and redo.
+2026-10-07T00:49:01.299Z PASS linked mention correction, ordinary-word preservation, no-duplicate filter and independent labels.
+2026-10-07T00:49:02.058Z PASS circle/triangle/square, fractional facing, both rotation buttons, pointer rotation and movement on Mac Brave over LAN.
+2026-10-07T00:49:02.463Z PASS simultaneous entries exactly once, same host chronology and distinct speaker/editor attribution.
+2026-10-07T00:49:02.610Z PASS copied arrangement, empty initial transcript, title and independent slide navigation/presence.
+Constellation tracker: http://localhost:3214
+Local network: http://192.168.0.141:3214
+Local network: http://100.75.247.76:3214
+Keep this host running while editors are connected. Sessions save automatically.
+2026-10-07T00:49:05.382Z PASS actual host process stop/restart, both physical-browser disconnect/reconnect, preserved composer draft, exact saved source/attribution, no duplicate entries.
+Fontconfig error: Cannot load default config file: File not found
+2026-10-07T00:49:08.134Z PASS mouse mention selection and 80-row long transcript saved on mac; synthetic artifacts retained locally.
+2026-10-07T00:49:09.205Z GENERATED real Windows edge PDFs in all three label modes with both slides and full transcripts; headless Page.printToPDF, no interactive print dialog.
+2026-10-07T00:49:11.520Z GENERATED real Windows chrome PDFs in all three label modes with both slides and full transcripts; headless Page.printToPDF, no interactive print dialog.
+2026-10-07T00:49:13.348Z JOIN windows host: Mac Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 / Windows Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0
+2026-10-07T00:49:13.499Z PASS direct browser app HTTP remoteIPAddress=192.168.0.129; numeric LAN origin http://192.168.0.129:3213; SSH forwards only browser/control ports 9333–9335.
+2026-10-07T00:49:14.440Z PASS concurrent entry edits, identical final text, visible caret, own undo preserving collaborator and redo.
+2026-10-07T00:49:14.762Z PASS linked mention correction, ordinary-word preservation, no-duplicate filter and independent labels.
+2026-10-07T00:49:15.774Z PASS circle/triangle/square, fractional facing, both rotation buttons, pointer rotation and movement on Mac Brave over LAN.
+2026-10-07T00:49:16.008Z PASS simultaneous entries exactly once, same host chronology and distinct speaker/editor attribution.
+2026-10-07T00:49:16.202Z PASS copied arrangement, empty initial transcript, title and independent slide navigation/presence.
+2026-10-07T00:49:19.388Z PASS actual host process stop/restart, both physical-browser disconnect/reconnect, preserved composer draft, exact saved source/attribution, no duplicate entries.
+2026-10-07T00:49:21.086Z PASS mouse mention selection and 80-row long transcript saved on windows; synthetic artifacts retained locally.
+2026-10-07T00:49:22.236Z GENERATED real Windows edge PDFs in all three label modes with both slides and full transcripts; headless Page.printToPDF, no interactive print dialog.
+2026-10-07T00:49:24.608Z GENERATED real Windows chrome PDFs in all three label modes with both slides and full transcripts; headless Page.printToPDF, no interactive print dialog.
+2026-10-07T00:49:26.258Z PASS backup transfer mac→windows via source physical browser fetch, coordinator memory, target browser file upload and target-host restoration: new ID; checkpoint, structured mentions, geometry, assignments and attribution unchanged; editable restored text; both originals intact.
+2026-10-07T00:49:27.279Z PASS backup transfer windows→mac via source physical browser fetch, coordinator memory, target browser file upload and target-host restoration: new ID; checkpoint, structured mentions, geometry, assignments and attribution unchanged; editable restored text; both originals intact.
+2026-10-07T00:49:27.280Z COMPLETE physical two-computer LAN checks and bidirectional restoration. Actual Safari and interactive print dialogs remain untested.

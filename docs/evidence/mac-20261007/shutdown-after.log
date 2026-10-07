@@ -1,0 +1,1 @@
+PASS host exits within 2 seconds with an idle speculative TCP connection.

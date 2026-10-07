@@ -11,6 +11,7 @@ import {
   NodeViewWrapper,
   ReactNodeViewRenderer,
   useEditor,
+  useEditorState,
   type NodeViewProps,
 } from "@tiptap/react";
 import { Extension } from "@tiptap/core";
@@ -19,6 +20,7 @@ import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import Mention from "@tiptap/extension-mention";
 import {
   SuggestionPluginKey,
+  exitSuggestion,
   type SuggestionProps,
   type SuggestionKeyDownProps,
 } from "@tiptap/suggestion";
@@ -30,6 +32,7 @@ import * as Y from "yjs";
 import { basicExtensions } from "../shared/text";
 import { hostHasSaved } from "../shared/receipt";
 import { newId } from "../shared/identity";
+import { speakerPrefix } from "../shared/speaker-prefix";
 import {
   emptyText,
   label,
@@ -107,45 +110,161 @@ export function allDrafts(): LocalDraft[] {
 }
 function mentionExtension(
   current: () => { session: Session; mode: LabelMode },
+  composer = false,
 ) {
   return Mention.extend({
     addNodeView: () => ReactNodeViewRenderer(LinkedLabel),
   }).configure({
     suggestion: {
       pluginKey: SuggestionPluginKey,
-      items: ({ query }) =>
-        current()
-          .session.assignments.filter((a) =>
-            label(current().session, a.id, "both")
-              .toLowerCase()
-              .includes(query.toLowerCase()),
-          )
-          .slice(0, 12),
+      allowSpaces: true,
+      shouldResetDismissed: ({ transaction, match }) =>
+        Boolean(transaction.getMeta("focus")) ||
+        (transaction.docChanged &&
+          match.text === "@" &&
+          (match.range.from + 1 > transaction.before.content.size ||
+            transaction.before.textBetween(
+              match.range.from,
+              match.range.from + 1,
+            ) !== "@")),
+      items: ({ query, editor }) => {
+        const { session } = current();
+        const atStart =
+          editor.state.selection.$from.start() === 1 &&
+          editor.state.selection.$from.parentOffset === query.length + 1;
+        const assignments =
+          composer && atStart
+            ? [
+                {
+                  id: "facilitator",
+                  representative: "Facilitator",
+                  representing: "",
+                },
+                ...session.assignments,
+              ]
+            : session.assignments;
+        return assignments.filter((a) =>
+          label(session, a.id, "both")
+            .toLowerCase()
+            .includes(query.trim().toLowerCase()),
+        );
+      },
       render: () => {
         let popup: HTMLDivElement | undefined;
+        let optionList: HTMLDivElement | undefined;
+        let announcement: HTMLDivElement | undefined;
+        let placementFrame: number | undefined;
         let selected = 0;
         let props: SuggestionProps<Session["assignments"][number]>;
+        const menuId = `assignment-menu-${newId()}`;
+        const position = () => {
+          if (!popup?.isConnected || !optionList) return;
+          const rect = props.clientRect?.();
+          if (!rect) return;
+          if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            exitSuggestion(props.editor.view, SuggestionPluginKey);
+            return;
+          }
+          const below = Math.max(0, window.innerHeight - rect.bottom - 18);
+          const above = Math.max(0, rect.top - 18);
+          const placeBelow = below >= popup.offsetHeight || below >= above;
+          const chromeHeight = popup.offsetHeight - optionList.offsetHeight;
+          optionList.style.maxHeight = `${Math.max(0, Math.min(240, window.innerHeight * 0.4, (placeBelow ? below : above) - chromeHeight))}px`;
+          popup.style.left = `${Math.max(12, Math.min(rect.left, window.innerWidth - popup.offsetWidth - 12))}px`;
+          popup.style.top = `${placeBelow ? rect.bottom + 6 : Math.max(12, rect.top - popup.offsetHeight - 6)}px`;
+          const active = optionList.querySelector<HTMLButtonElement>(
+            '[aria-selected="true"]',
+          );
+          if (active) {
+            const top = active.offsetTop;
+            const bottom = top + active.offsetHeight;
+            if (top < optionList.scrollTop) optionList.scrollTop = top;
+            else if (bottom > optionList.scrollTop + optionList.clientHeight)
+              optionList.scrollTop = bottom - optionList.clientHeight;
+          }
+        };
+        const onViewportChange = (event: Event) => {
+          if (event.target instanceof Node && popup?.contains(event.target))
+            return;
+          if (placementFrame === undefined)
+            placementFrame = window.requestAnimationFrame(() => {
+              placementFrame = undefined;
+              position();
+            });
+        };
+        const onFocusOut = (event: FocusEvent) => {
+          if (
+            event.relatedTarget instanceof Node &&
+            popup?.contains(event.relatedTarget)
+          )
+            return;
+          exitSuggestion(props.editor.view, SuggestionPluginKey);
+        };
+        const choose = (id: string) => {
+          if (id === "facilitator") {
+            props.editor
+              .chain()
+              .focus()
+              .insertContentAt(props.range, "@facilitator")
+              .run();
+            exitSuggestion(props.editor.view, SuggestionPluginKey);
+          } else props.command({ id, label: null });
+        };
         const draw = () => {
           popup!.replaceChildren();
-          const rect = props.clientRect?.();
-          if (rect) {
-            popup!.style.left = `${rect.left}px`;
-            popup!.style.top = `${rect.bottom + 6}px`;
+          const heading = document.createElement("div");
+          heading.className = "mention-menu-heading";
+          heading.textContent = "Find a name or role";
+          heading.setAttribute("role", "presentation");
+          popup!.append(heading);
+          const options = document.createElement("div");
+          optionList = options;
+          options.className = "mention-options";
+          popup!.append(options);
+          if (!props.items.length) {
+            options.textContent = props.loading
+              ? "Searching assignments…"
+              : "No matching assignments. Try another name or role.";
+            props.editor.view.dom.removeAttribute("aria-activedescendant");
           }
-          if (!props.items.length)
-            popup!.textContent = "No matching assignments";
           props.items.forEach((item, index) => {
             const button = document.createElement("button");
             button.type = "button";
+            button.tabIndex = -1;
             button.setAttribute("role", "option");
             button.setAttribute("aria-selected", String(index === selected));
+            button.id = `${menuId}-${item.id}`;
+            button.setAttribute(
+              "aria-label",
+              label(current().session, item.id, "both"),
+            );
             button.textContent = label(current().session, item.id, "both");
-            button.onmousedown = (event) => {
+            button.onpointerdown = (event) => {
               event.preventDefault();
-              props.command({ id: item.id, label: null });
             };
-            popup!.append(button);
+            button.onclick = () => choose(item.id);
+            options.append(button);
+            if (index === selected)
+              props.editor.view.dom.setAttribute(
+                "aria-activedescendant",
+                button.id,
+              );
           });
+          const hint = document.createElement("div");
+          hint.className = "mention-menu-hint";
+          hint.setAttribute("role", "presentation");
+          hint.textContent = props.items.length
+            ? "Up / Down to choose · Enter to select · Esc to close"
+            : "Esc to close · Keep typing to search";
+          popup!.append(hint);
+          const status = props.loading
+            ? "Searching assignments."
+            : props.items.length
+              ? `${props.items.length} assignment${props.items.length === 1 ? "" : "s"} found. Use Up or Down to choose.`
+              : "No matching assignments. Try another name or role. Escape closes the list.";
+          if (announcement && announcement.textContent !== status)
+            announcement.textContent = status;
+          position();
         };
         return {
           onStart: (next: typeof props) => {
@@ -153,9 +272,20 @@ function mentionExtension(
             selected = 0;
             popup = document.createElement("div");
             popup.className = "mention-menu";
+            popup.id = menuId;
             popup.setAttribute("role", "listbox");
             popup.setAttribute("aria-label", "Assignment mentions");
             document.body.append(popup);
+            announcement = document.createElement("div");
+            announcement.className = "mention-status";
+            announcement.setAttribute("role", "status");
+            announcement.setAttribute("aria-live", "polite");
+            announcement.setAttribute("aria-atomic", "true");
+            document.body.append(announcement);
+            props.editor.view.dom.setAttribute("aria-controls", menuId);
+            window.addEventListener("resize", onViewportChange);
+            window.addEventListener("scroll", onViewportChange, true);
+            props.editor.view.dom.addEventListener("focusout", onFocusOut);
             draw();
           },
           onUpdate: (next: typeof props) => {
@@ -165,7 +295,7 @@ function mentionExtension(
           },
           onKeyDown: ({ event }: SuggestionKeyDownProps) => {
             if (event.key === "Escape") {
-              popup?.remove();
+              // Tiptap dispatches its suggestion exit after this callback.
               return true;
             }
             if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -178,21 +308,35 @@ function mentionExtension(
               return true;
             }
             if (event.key === "Enter" && props.items[selected]) {
-              props.command({ id: props.items[selected].id, label: null });
+              choose(props.items[selected].id);
               return true;
             }
             return false;
           },
-          onExit: () => popup?.remove(),
+          onExit: () => {
+            window.removeEventListener("resize", onViewportChange);
+            window.removeEventListener("scroll", onViewportChange, true);
+            props.editor.view.dom.removeEventListener("focusout", onFocusOut);
+            if (placementFrame !== undefined)
+              window.cancelAnimationFrame(placementFrame);
+            placementFrame = undefined;
+            popup?.remove();
+            announcement?.remove();
+            props.editor.view.dom.removeAttribute("aria-controls");
+            props.editor.view.dom.removeAttribute("aria-activedescendant");
+          },
         };
       },
     },
   });
 }
-function extensions(current: () => { session: Session; mode: LabelMode }) {
+function extensions(
+  current: () => { session: Session; mode: LabelMode },
+  composer = false,
+) {
   return [
     ...basicExtensions().filter((e) => e.name !== "mention"),
-    mentionExtension(current),
+    mentionExtension(current, composer),
   ];
 }
 interface SharedProps {
@@ -264,6 +408,8 @@ export function SharedEntry({
           "aria-label": `Entry text ${entry.id}`,
           role: "textbox",
           "aria-multiline": "true",
+          "aria-autocomplete": "list",
+          "aria-haspopup": "listbox",
         },
       },
       onUpdate: ({ editor }) => {
@@ -378,7 +524,7 @@ export function Composer({
   const editor = useEditor(
     {
       extensions: [
-        ...extensions(() => latest.current),
+        ...extensions(() => latest.current, true),
         Extension.create({
           name: "saveEntry",
           priority: 1001,
@@ -400,18 +546,29 @@ export function Composer({
           "aria-label": "New transcript entry",
           role: "textbox",
           "aria-multiline": "true",
-          "data-placeholder":
-            "Record what was said. Type @ to link an assignment.",
+          "aria-autocomplete": "list",
+          "aria-haspopup": "listbox",
+          "aria-placeholder": "Record what was said.",
         },
       },
-      onUpdate: ({ editor }) =>
+      onUpdate: ({ editor }) => {
+        const prefix = speakerPrefix(
+          editor.getJSON() as RichText,
+          latest.current.session,
+        );
+        if (prefix) {
+          speakerRef.current = prefix.speaker;
+          setSpeaker(prefix.speaker);
+          editor.commands.deleteRange({ from: 1, to: 1 + prefix.size });
+        }
         saveDraft({
           sessionId: latest.current.session.id,
           slideId: latest.current.slideId,
           target: `composer-${latest.current.slideId}`,
           speaker: speakerRef.current,
           text: editor.getJSON() as RichText,
-        }),
+        });
+      },
     },
     [props.slideId],
   );
@@ -447,6 +604,10 @@ export function Composer({
   performSubmit.current = () => {
     void save();
   };
+  const isEmpty = useEditorState({
+    editor,
+    selector: ({ editor }) => editor?.isEmpty ?? true,
+  });
   useEffect(() => {
     onHandle(
       editor
@@ -503,7 +664,18 @@ export function Composer({
           ))}
         </select>
       </label>
-      <EditorContent editor={editor} />
+      <div className="composer-input">
+        {isEmpty !== false && (
+          <span className="composer-placeholder" aria-hidden="true">
+            Record what was said.
+          </span>
+        )}
+        <EditorContent editor={editor} />
+      </div>
+      <p className="speaker-hint">
+        Find a name or role with @. Up / Down and Enter select it. To set the
+        speaker: start with @name, select, then type :.
+      </p>
       <div className="composer-footer">
         <span>
           {props.connected
