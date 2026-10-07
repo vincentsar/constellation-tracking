@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
-import { createServer } from "node:net";
+import { connect, createServer } from "node:net";
 import os from "node:os";
 import path from "node:path";
 import type { Session } from "../src/shared/domain";
@@ -105,3 +105,46 @@ test("the host startup command displays network URLs and reopens its saved sessi
     await rm(directory, { recursive: true, force: true });
   }
 }, 20000);
+
+test("SIGTERM exits while an idle speculative TCP connection remains open", async () => {
+  const directory = await mkdtemp(
+    path.join(os.tmpdir(), "constellation-shutdown-"),
+  );
+  const hostPort = await port();
+  let output = "";
+  const child = spawn(process.execPath, ["--import", "tsx", "src/server/main.ts"], {
+    env: {
+      ...process.env,
+      PORT: String(hostPort),
+      SESSION_DIRECTORY: directory,
+      REQUIRE_CODE_TO_JOIN_PROJECT: "false",
+    },
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  child.stdout.on("data", (data) => {
+    output += data.toString();
+  });
+  let socket: ReturnType<typeof connect> | undefined;
+  try {
+    await expect
+      .poll(() => output, { timeout: 8000 })
+      .toContain("Constellation tracker:");
+    socket = connect(hostPort, "127.0.0.1");
+    socket.on("error", () => {});
+    await once(socket, "connect");
+    child.kill("SIGTERM");
+    await expect
+      .poll(() => child.exitCode !== null || child.signalCode !== null, {
+        timeout: 3000,
+      })
+      .toBe(true);
+  } finally {
+    socket?.destroy();
+    if (child.exitCode === null && child.signalCode === null) {
+      const exited = once(child, "exit");
+      child.kill("SIGKILL");
+      await exited;
+    }
+    await rm(directory, { recursive: true, force: true });
+  }
+}, 15000);
