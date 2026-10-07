@@ -1,0 +1,26 @@
+{
+  "name": "Constellation tracker",
+  "colors": {
+    "primary": "#365c4c",
+    "background": "#f7f5ef",
+    "paper": "#fffefa",
+    "foreground": "#263a37",
+    "secondary": "#586b62",
+    "border": "#d2d8ce"
+  },
+  "typography": {
+    "body": {
+      "fontFamily": "Inter, sans-serif",
+      "fontSize": "14px",
+      "lineHeight": 1.6
+    }
+  },
+  "interaction": {
+    "focus": "2px solid #8d593b",
+    "selection": "#dfc9aa",
+    "selectedPieceMotionMs": 180,
+    "reducedMotion": true
+  },
+  "breakpoints": { "headerWrap": 1100, "stackedPanels": 760 },
+  "surface": { "mode": "operate", "path": "src/client/App.tsx" }
+}
