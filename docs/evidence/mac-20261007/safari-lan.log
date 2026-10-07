@@ -1,0 +1,26 @@
+2026-10-07T01:01:35.788Z TESTED SHA 1a3b4107488be1fc7f61e6b689039692f324c9c5; native safaridriver Safari 26.5; Selenium 4.50.0; physical Mac/Windows LAN.
+Constellation tracker: http://localhost:3216
+Local network: http://192.168.0.141:3216
+Local network: http://100.75.247.76:3216
+Keep this host running while editors are connected. Sessions save automatically.
+Fontconfig error: Cannot load default config file: File not found
+2026-10-07T01:01:41.612Z PASS actual Safari 26.5 mac host http://192.168.0.141:3216 joined alongside physical Windows Edge 154.0.4258.53.
+2026-10-07T01:01:42.786Z PASS native Safari keyboard simultaneous same-entry edits/convergence, collaborator caret, own undo preserving Windows contribution and redo.
+2026-10-07T01:01:42.988Z PASS Safari linked mentions, master correction without ordinary-word replacement, independent labels and no-duplicate spoken/mentioned filter.
+2026-10-07T01:01:44.862Z PASS Safari circle/triangle/square, fractional angles, both rotation buttons and native pointer drag/rotation.
+Constellation tracker: http://localhost:3216
+Local network: http://192.168.0.141:3216
+Local network: http://100.75.247.76:3216
+Keep this host running while editors are connected. Sessions save automatically.
+Fontconfig error: Cannot load default config file: File not found
+2026-10-07T01:01:49.969Z PASS Safari independent navigation, keyboard/mouse mentions, real host outage with paused shared controls, local draft recovery, actual process restart/reconnect, exact source/checkpoints/attribution and identical final text.
+2026-10-07T01:01:50.226Z BLOCKED native Safari WebDriver PDF command: UnknownCommandError The command 'POST /session/00264D92-57AC-4B03-A509-A85F8C3F2297/print' was not found.
+2026-10-07T01:01:50.226Z Safari manual print fixture: http://192.168.0.141:3216 / Safari physical LAN mac 1791334897508 / session c9ffa6d4-7310-4be3-8a67-a74b8c9cd449
+2026-10-07T01:01:53.242Z PASS actual Safari 26.5 windows host http://192.168.0.129:3213 joined alongside physical Windows Edge 154.0.4258.53.
+2026-10-07T01:01:54.348Z PASS native Safari keyboard simultaneous same-entry edits/convergence, collaborator caret, own undo preserving Windows contribution and redo.
+2026-10-07T01:01:54.531Z PASS Safari linked mentions, master correction without ordinary-word replacement, independent labels and no-duplicate spoken/mentioned filter.
+2026-10-07T01:01:56.376Z PASS Safari circle/triangle/square, fractional angles, both rotation buttons and native pointer drag/rotation.
+2026-10-07T01:02:01.232Z PASS Safari independent navigation, keyboard/mouse mentions, real host outage with paused shared controls, local draft recovery, actual process restart/reconnect, exact source/checkpoints/attribution and identical final text.
+2026-10-07T01:02:01.405Z BLOCKED native Safari WebDriver PDF command: UnknownCommandError The command 'POST /session/00264D92-57AC-4B03-A509-A85F8C3F2297/print' was not found.
+2026-10-07T01:02:01.405Z Safari manual print fixture: http://192.168.0.129:3213 / Safari physical LAN windows 1791334911029 / session 68e8eafd-4279-4c33-b8b3-a8e4c1539da3
+2026-10-07T01:02:01.406Z COMPLETE actual Safari LAN workflow on both host OSes.

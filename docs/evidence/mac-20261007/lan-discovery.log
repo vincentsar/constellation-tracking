@@ -1,0 +1,13 @@
+** WARNING: connection is not using a post-quantum key exchange algorithm.
+** This session may be vulnerable to "store now, decrypt later" attacks.
+** The server may need to be upgraded. See https://openssh.com/pq.html
+Destination: YH / YH\user
+SSH initial directory: C:\Users\user
+Windows LAN address: 192.168.0.129
+Microsoft Windows 11 Pro 10.0.22621 build 22621
+Node: v24.19.0
+Mac initial LAN host HTTP: 200
+Isolated verification directory: C:\Users\user\Coding\constellation-tracking-mac-verification-20261007
+Verification SHA: b4f5d47c260260f0fed7cbfd3a33b6225217402b
+C:\Program Files\Google\Chrome\Application\chrome.exe / 155.0.8059.39
+C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe / 154.0.4258.53

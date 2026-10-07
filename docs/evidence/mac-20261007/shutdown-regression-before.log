@@ -1,0 +1,35 @@
+
+ RUN  v5.0.3 /Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007
+
+ ❯ tests/startup.test.ts (2 tests | 1 failed | 1 skipped) 3550ms
+   × SIGTERM exits while an idle speculative TCP connection remains open 3549ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/startup.test.ts > SIGTERM exits while an idle speculative TCP connection remains open
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/startup.test.ts:132:8
+    130|     await expect.poll(() => child.exitCode !== null || child.signalCod…
+    131|       timeout: 3000,
+    132|     }).toBe(true);
+       |        ^
+    133|   } finally {
+    134|     socket?.destroy();
+
+Caused by: Error: Matcher did not succeed in time.
+ ❯ tests/startup.test.ts:130:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 skipped (2)
+   Start at  08:43:48
+   Duration  3.67s (tests 99%)
