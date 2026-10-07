@@ -1,0 +1,17 @@
+
+> constellation-tracker@0.1.0 start
+> tsx src/server/main.ts
+
+/Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007/src/server/host.ts:45
+    throw new Error(
+          ^
+
+Error: Code-required joining is not available yet. Host refused startup; set REQUIRE_CODE_TO_JOIN_PROJECT=false to use URL-only joining.
+    at parseRequireCode (/Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007/src/server/host.ts:45:11)
+    at buildHost (/Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007/src/server/host.ts:56:3)
+    at <anonymous> (/Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007/src/server/main.ts:9:23)
+    at ModuleJob.run (node:internal/modules/esm/module_job:561:25)
+    at async node:internal/modules/esm/loader:647:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.21.0

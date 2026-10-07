@@ -1,0 +1,51 @@
+
+ RUN  v5.0.3 /Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:30:26
+   Duration  1.12s (tests 98%, transform 1%, import 1%)
+
+
+ RUN  v5.0.3 /Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007
+
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:30:27
+   Duration  1.17s (tests 98%, transform 1%, import 1%)
+
+
+ RUN  v5.0.3 /Users/vincentsar/Coding/constellation-tracking-mac-verification-20261007
+
+ ❯ tests/startup.test.ts (1 test | 1 failed) 695ms
+   × the host startup command displays network URLs and reopens its saved sessions 694ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/startup.test.ts > the host startup command displays network URLs and reopens its saved sessions
+AssertionError: expected 'Constellation tracker: http://localho…' to match /Local network: http:\/\/\d+\.\d+\.\d…/\
+
+- Expected:
+/Local network: http:\/\/\d+\.\d+\.\d+\.\d+:\d+/
+
++ Received:
+"Constellation tracker: http://localhost:56344
+"
+
+ ❯ tests/startup.test.ts:62:20
+     60|       .poll(() => output, { timeout: 8000, message: errors })
+     61|       .toContain("Constellation tracker:");
+     62|     expect(output).toMatch(/Local network: http:\/\/\d+\.\d+\.\d+\.\d+…
+       |                    ^
+     63|     const identity = (await (
+     64|       await fetch(`${origin}/api/editors`, {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  08:30:29
+   Duration  796ms (tests 96%, transform 3%, import 1%)

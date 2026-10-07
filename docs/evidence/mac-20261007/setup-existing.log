@@ -1,0 +1,5 @@
+
+> constellation-tracker@0.1.0 setup
+> node scripts/setup.mjs
+
+Existing .env kept.
