@@ -587,6 +587,22 @@ function Workspace({
     [session, textUpdates],
   );
   const composer = useRef<ComposerHandle | null>(null);
+  const sessionMain = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    const main = sessionMain.current;
+    const board = main?.querySelector<HTMLElement>(".board-frame");
+    if (!main || !board) return;
+    const matchBoardHeight = () => {
+      main.style.setProperty(
+        "--slide-height",
+        `${board.getBoundingClientRect().height}px`,
+      );
+    };
+    matchBoardHeight();
+    const observer = new ResizeObserver(matchBoardHeight);
+    observer.observe(board);
+    return () => observer.disconnect();
+  }, [session?.id]);
   const handle = useCallback((value: ComposerHandle | null) => {
     composer.current = value;
   }, []);
@@ -765,7 +781,7 @@ function Workspace({
             } catch {}
           }}
         />
-        <main className="session-main">
+        <main className="session-main" ref={sessionMain}>
           <section className="arrangement">
             <div className="panel-heading">
               <Field

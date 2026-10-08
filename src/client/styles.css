@@ -469,6 +469,10 @@ td button {
   padding: 24px;
   background: var(--paper);
   min-width: 0;
+  height: var(--slide-height, auto);
+  align-self: start;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .transcript-heading {
   display: flex;
@@ -815,6 +819,9 @@ td button {
   .transcript {
     border-left: 0;
     border-top: 1px solid var(--line);
+    height: auto;
+    max-height: 75vh;
+    align-self: stretch;
   }
   .app-header {
     padding: 14px 18px;
