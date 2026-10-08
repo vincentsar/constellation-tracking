@@ -2,6 +2,14 @@
 
 Run this against the implementation candidate before claiming full verification. Record OS, Node, browser versions, host URL, date, and result for each run. Use synthetic session content.
 
+## Current evidence status
+
+The user withdrew the earlier Safari success statement on 2026-10-07. Do not
+use it as verification evidence. Actual Safari printing/PDF in all three label
+modes and updated speaker/dropdown/composer checks remain pending. See
+`mac-verification.md` and `verification.md` for earlier completed runs and their
+recorded revisions; these do not establish coverage of the newer composer changes.
+
 ## Required matrix
 
 | Host    | Editor A               | Editor B                                    | Status in this workspace                         |

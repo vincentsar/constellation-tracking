@@ -70,3 +70,31 @@ acceptance evidence is actual Safari printing/PDF in all three label modes and
 Safari verification of the newer speaker shortcut/dropdown and these composer
 changes. Earlier physical LAN/macOS results remain tied to their recorded SHA;
 these fixes do not claim fresh macOS/Safari manual validation.
+
+
+## Follow-up to checkpoint 8632503
+
+Both supplied Standards findings still applied in the clean reviewed checkout.
+They were accepted as bounded maintainability improvements:
+
+- `changedUnits` normalizes before/after state and calculates changed units once.
+  Command recording reuses that result for patches and revision tracking;
+  transcript-only recording uses the same calculation. Previous revision values
+  are captured before updating them. Explicit same-value field supersession and
+  structural conflict scopes are preserved.
+- `createPiece` supplies position allocation, rotation, color, and shape defaults
+  for both a new assignment and an existing assignment added to a slide. It
+  creates fresh geometry per call; stable assignment identity and slide-specific
+  arrangements are unchanged.
+
+These are behaviour-preserving extractions. Existing domain, host, persistence,
+collaboration, and two-browser workflow regressions were used instead of adding
+helper-shaped tests. Follow-up source inspection of `git diff 8632503 -- src`
+found no further Standards or Spec code issues in these extractions; this is
+implementer inspection, not independent approval. The board owns formal reviews.
+
+The Spec report identifies a manual evidence gap only. Actual Safari printing
+and updated speaker/dropdown/composer checks cannot be run in this Windows task
+environment with no attached macOS/Safari runner. They remain pending against
+the board's candidate, using `manual-verification.md`; Windows browser results
+are not substituted for actual Safari evidence.

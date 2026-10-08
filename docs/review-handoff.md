@@ -9,15 +9,14 @@ earlier two-agent Impeccable assessment reviewed dropdown design only.
 
 ## Candidate and comparison
 
-The board checkpointed the reviewed implementation at `faa9435`. The task
-worktree now contains follow-up fixes for the three supplied Spec defects and
-bounded improvements for both Standards smells. These changes require a new
-board checkpoint before formal re-review.
+The latest reviewed checkpoint is `8632503e972fd085534392cd289a96adcd2299f0`.
+The board's supplied independent reports found two maintainability smells and
+only the pending Safari evidence gap on the Spec axis. The task worktree now
+addresses both smells through shared changed-unit calculation and piece creation.
 
-The fix comparison is `git diff faa9435` in this task worktree. The board should
-pin its new checkpoint SHA and review `faa9435...<new-candidate-sha>` for the
-follow-up. Recommended full-task fixed point remains `91823b9`, the empty initial
-repository commit, for a complete product review.
+The follow-up comparison is `git diff 8632503` in this task worktree. The board
+should checkpoint and pin the resulting SHA for formal review. The full-task
+fixed point remains `91823b9` for complete product review.
 
 See [review-fixes.md](review-fixes.md) for the fix scope, follow-up inspection,
 regression evidence, and outstanding Safari acceptance checks.
@@ -82,3 +81,12 @@ pending. Actual screen-reader output is not claimed. Use
 No source changes followed the latest passing full suites; subsequent changes
 record evidence and this handoff. No commit, merge, integration, or push was
 performed by the implementation worker.
+
+
+## Latest manual status
+
+The user withdrew the earlier Safari success statement on 2026-10-07; it is
+excluded from verification evidence. Safari printing in all three label modes
+and updated speaker/dropdown/composer checks remain pending. Both supplied
+Standards findings are already resolved in the task worktree and their recorded
+checks passed. This correction changes documentation only.

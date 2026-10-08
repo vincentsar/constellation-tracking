@@ -185,3 +185,40 @@ src/shared/domain.ts; tests/browser/workflow.spec.ts.
 modes and actual Safari checks of the updated speaker/dropdown/composer workflows
 remain pending. Windows automation does not replace those manual checks. No
 independent review approval, commit, merge, integration, or push is claimed.
+
+
+### Standards follow-up to checkpoint 8632503
+
+Both independent Standards smells were confirmed and addressed with shared
+changed-unit calculation in command history and shared default piece creation.
+These extractions preserve the existing command/undo behaviour. No additional
+Spec code defect was reported. See `review-fixes.md` for the judgement calls.
+
+Verification in this Windows task worktree:
+
+- `npm.cmd run typecheck`: passed.
+- `npx.cmd vitest run tests/domain.test.ts tests/host.test.ts`: 9/9 passed.
+- `npm.cmd test`: production build/typecheck and 22/22 tests in 7 files passed
+  (6.75 seconds for Vitest).
+- `npx.cmd playwright test --grep 'two editors merge|distinct role assignments'
+  --output=test-results/standards-followup`: 4/4 passed (26.8 seconds), Windows
+  Chrome 155.0.8059.39 and Edge 154.0.4258.53. Covers collaborative text/undo and
+  assignment removal/re-addition with slide-specific state.
+- `git diff --check`: passed. No source edits followed the passing checks.
+
+**Overall verified remains false.** Actual Safari printing/PDF with complete
+slides/transcripts in all three label modes and Safari checks of the updated
+speaker/dropdown/composer workflows remain pending. This Windows environment
+has no attached macOS/Safari runner; no such results are claimed. Use the manual
+verification checklist against the board-pinned candidate and record the tested
+SHA and output evidence. The board owns checkpointing, formal review, integration,
+and push; none was performed by this implementation worker.
+
+
+### Safari report correction (2026-10-07)
+
+The user withdrew the earlier Safari success statement. It is excluded from
+verification evidence. Actual Safari printing/PDF in all three label modes and
+checks of the updated speaker/dropdown/composer workflows remain pending.
+Previously imported macOS/Safari evidence retains only its original documented
+scope and tested revision. Overall verified remains false.

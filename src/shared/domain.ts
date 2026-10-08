@@ -228,6 +228,15 @@ export function readableText(
       .join(node.type === "doc" ? "\n" : "")
   );
 }
+function createPiece(slide: Slide, assignmentId: string): Piece {
+  return {
+    assignmentId,
+    position: availablePosition(slide),
+    rotation: 0,
+    color: "#d4b779",
+    shape: "circle",
+  };
+}
 export function applyCommand(
   session: Session,
   input: Command,
@@ -255,13 +264,7 @@ export function applyCommand(
         representative: c.representative,
         representing: c.representing,
       });
-      slide.pieces[c.id] = {
-        assignmentId: c.id,
-        position: availablePosition(slide),
-        rotation: 0,
-        color: "#d4b779",
-        shape: "circle",
-      };
+      slide.pieces[c.id] = createPiece(slide, c.id);
       break;
     }
     case "assignment.set": {
@@ -275,13 +278,7 @@ export function applyCommand(
       const slide = getSlide(session, c.slideId);
       if (slide.pieces[c.assignmentId])
         throw new Error("Assignment already appears on this slide.");
-      slide.pieces[c.assignmentId] = {
-        assignmentId: c.assignmentId,
-        position: availablePosition(slide),
-        rotation: 0,
-        color: "#d4b779",
-        shape: "circle",
-      };
+      slide.pieces[c.assignmentId] = createPiece(slide, c.assignmentId);
       break;
     }
     case "piece.remove":

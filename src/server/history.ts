@@ -78,37 +78,41 @@ interface Action {
   }[];
   scopes: string[];
 }
+function changedUnits(before: Session, after: Session) {
+  const left = units(before),
+    right = units(after);
+  return [...new Set([...left.keys(), ...right.keys()])]
+    .filter(
+      (key) =>
+        !isDeepStrictEqual(left.get(key), right.get(key)) ||
+        left.has(key) !== right.has(key),
+    )
+    .map((key) => ({
+      key,
+      before: left.get(key),
+      after: right.get(key),
+      existed: left.has(key),
+      exists: right.has(key),
+    }));
+}
 export class CommandHistory {
   private stacks = new Map<string, Action[]>();
   private revisions = new Map<string, number>();
+  private recordRevisions(
+    changes: ReturnType<typeof changedUnits>,
+    revision: number,
+  ) {
+    for (const { key } of changes) this.revisions.set(key, revision);
+  }
   recordChanges(before: Session, after: Session) {
-    const left = units(before),
-      right = units(after);
-    const keys = new Set([...left.keys(), ...right.keys()]);
-    for (const key of keys)
-      if (
-        !isDeepStrictEqual(left.get(key), right.get(key)) ||
-        left.has(key) !== right.has(key)
-      )
-        this.revisions.set(key, after.revision);
+    this.recordRevisions(changedUnits(before, after), after.revision);
   }
   record(editor: string, command: Command, before: Session, after: Session) {
-    const left = units(before),
-      right = units(after);
-    const patches = [...new Set([...left.keys(), ...right.keys()])]
-      .filter(
-        (k) =>
-          !isDeepStrictEqual(left.get(k), right.get(k)) ||
-          left.has(k) !== right.has(k),
-      )
-      .map((key) => ({
-        key,
-        before: left.get(key),
-        after: right.get(key),
-        existed: left.has(key),
-        exists: right.has(key),
-        beforeRevision: this.revisions.get(key),
-      }));
+    const changes = changedUnits(before, after);
+    const patches = changes.map((change) => ({
+      ...change,
+      beforeRevision: this.revisions.get(change.key),
+    }));
     // A same-valued collaborator command still supersedes earlier undo.
     const fieldKey =
       command.type === "piece.set"
@@ -120,7 +124,7 @@ export class CommandHistory {
             : command.type === "session.name"
               ? "name"
               : null;
-    this.recordChanges(before, after);
+    this.recordRevisions(changes, after.revision);
     if (fieldKey) this.revisions.set(fieldKey, after.revision);
     const scopes: string[] = [];
     if (command.type === "slide.create" || command.type === "slide.delete")
