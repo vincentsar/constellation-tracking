@@ -403,8 +403,8 @@ test("dropdown stays anchored through viewport changes, dismisses on focus loss 
   await expect(choice).toHaveAttribute("tabindex", "-1");
   await choice.evaluate((el: HTMLButtonElement) => el.click());
   await expect(menu).toHaveCount(0);
-  await expect(composer.locator("[data-assignment-id]")).toHaveCount(1);
-  await composer.press(":");
+  await expect(composer).toHaveText("");
+  await expect(composer.locator("[data-assignment-id]")).toHaveCount(0);
   await expect(
     page.locator(".composer").getByRole("combobox").locator("option:checked"),
   ).toHaveText("Alice (Mother)");
@@ -421,14 +421,19 @@ test("representative and representation dropdowns support arrow selection, facil
   const composer = page.getByRole("textbox", { name: "New transcript entry" });
   const speaker = page.locator(".composer").getByRole("combobox");
   const menu = page.getByRole("listbox", { name: "Assignment mentions" });
+  await expect(speaker).toHaveValue("");
+  await expect(speaker.locator("option:checked")).toHaveText("General note");
   await composer.press("@");
   await expect(
     menu.getByRole("option", { name: "Facilitator", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
   await composer.press("Enter");
-  await composer.press(":");
   await expect(speaker).toHaveValue("facilitator");
   await expect(composer).toHaveText("");
+  await composer.pressSequentially("Facilitator speaks");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(1);
+  await expect(speaker).toHaveValue("");
   await composer.pressSequentially("@Alice");
   await expect(menu.getByRole("option")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("dropdown-desktop.png") });
@@ -441,23 +446,28 @@ test("representative and representation dropdowns support arrow selection, facil
     menu.getByRole("option", { name: "Alice 1 (Mother)" }),
   ).toHaveAttribute("aria-selected", "true");
   await composer.press("Enter");
-  await composer.press(":");
   await expect(speaker.locator("option:checked")).toHaveText(
     "Alice 1 (Mother)",
   );
+  await composer.pressSequentially("@Fear");
+  await composer.press("Enter");
+  await expect(speaker.locator("option:checked")).toHaveText("Alice 1 (Mother)");
+  await expect(composer.locator("[data-assignment-id]")).toHaveCount(1);
+  await composer.press("ControlOrMeta+A");
+  await composer.press("Backspace");
+  await speaker.selectOption("");
   await page.setViewportSize({ width: 1024, height: 768 });
   await composer.pressSequentially("@Fear");
   await expect(menu.getByRole("option")).toHaveCount(1);
   await page.screenshot({ path: testInfo.outputPath("dropdown-laptop.png") });
   await composer.press("Enter");
-  await composer.press(":");
   await expect(speaker.locator("option:checked")).toHaveText("Alice 2 (Fear)");
+  await speaker.selectOption("");
   await composer.pressSequentially("@Inner child");
   await expect(
     menu.getByRole("option", { name: "Cara (Inner child)" }),
   ).toBeVisible();
   await composer.press("Enter");
-  await composer.press(":");
   await expect(speaker.locator("option:checked")).toHaveText(
     "Cara (Inner child)",
   );
@@ -468,6 +478,7 @@ test("representative and representation dropdowns support arrow selection, facil
   await composer.press("ControlOrMeta+A");
   await composer.press("Backspace");
   await expect(composer).toHaveText("");
+  await speaker.selectOption("");
   for (let i = 1; i <= 11; i++)
     await assignment(page, `Guest ${i}`, `Role ${i}`);
   await composer.click();
@@ -488,14 +499,22 @@ test("representative and representation dropdowns support arrow selection, facil
   });
   await expect(composer).toBeFocused();
   await composer.press("Enter");
-  await composer.press(":");
   await expect(speaker.locator("option:checked")).toHaveText(
     "Guest 11 (Role 11)",
   );
   await composer.pressSequentially("Last assignment speaks");
   await composer.press("Enter");
-  await expect(page.locator(".entry")).toHaveCount(1);
-  await expect(page.locator(".entry")).toContainText("Guest 11 (Role 11)");
+  await expect(page.locator(".entry")).toHaveCount(2);
+  await expect(page.locator(".entry").last()).toContainText("Guest 11 (Role 11)");
+  await expect(speaker).toHaveValue("");
+  await expect(speaker.locator("option:checked")).toHaveText("General note");
+  await composer.pressSequentially("A general note");
+  await speaker.selectOption("");
+  await expect(speaker.locator("option:checked")).toHaveText("General note");
+  await composer.press("Enter");
+  await expect(page.locator(".entry")).toHaveCount(3);
+  await expect(page.locator(".entry").last()).toContainText("General note");
+  await expect(speaker.locator("option:checked")).toHaveText("General note");
 });
 
 test("leading colon shortcuts select speakers while inline mentions and ambiguous names retain their identities", async ({
@@ -523,9 +542,7 @@ test("leading colon shortcuts select speakers while inline mentions and ambiguou
 
   await assignment(page, "Alice", "Fear");
   await composer.fill("@Alice: ambiguous");
-  await expect(speaker.locator("option:checked")).toHaveText(
-    "Alice 1 (Mother)",
-  );
+  await expect(speaker).toHaveValue("");
   await expect(composer).toHaveText("@Alice: ambiguous");
   await composer.fill("@Alice 2: I feel afraid");
   await expect(speaker.locator("option:checked")).toHaveText("Alice 2 (Fear)");
@@ -538,7 +555,6 @@ test("leading colon shortcuts select speakers while inline mentions and ambiguou
     .getByRole("listbox")
     .getByRole("option", { name: "Alice 1 (Mother)", exact: true })
     .click();
-  await composer.press(":");
   await expect(speaker.locator("option:checked")).toHaveText(
     "Alice 1 (Mother)",
   );

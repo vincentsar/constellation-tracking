@@ -111,7 +111,7 @@ export function allDrafts(): LocalDraft[] {
   return drafts;
 }
 function mentionExtension(
-  current: () => { session: Session; mode: LabelMode },
+  current: () => { session: Session; mode: LabelMode; speaker?: string | null },
   composer = false,
 ) {
   return Mention.extend({
@@ -135,7 +135,7 @@ function mentionExtension(
           editor.state.selection.$from.start() === 1 &&
           editor.state.selection.$from.parentOffset === query.length + 1;
         const assignments =
-          composer && atStart
+          composer && atStart && current().speaker === null
             ? [
                 {
                   id: "facilitator",
@@ -203,11 +203,19 @@ function mentionExtension(
           exitSuggestion(props.editor.view, SuggestionPluginKey);
         };
         const choose = (id: string) => {
-          if (id === "facilitator") {
+          if (composer && props.range.from === 1 && current().speaker === null) {
             props.editor
               .chain()
               .focus()
-              .insertContentAt(props.range, "@facilitator")
+              .insertContentAt(
+                props.range,
+                id === "facilitator"
+                  ? "@facilitator:"
+                  : [
+                      { type: "mention", attrs: { id, label: null } },
+                      { type: "text", text: ":" },
+                    ],
+              )
               .run();
             exitSuggestion(props.editor.view, SuggestionPluginKey);
           } else props.command({ id, label: null });
@@ -333,7 +341,7 @@ function mentionExtension(
   });
 }
 function extensions(
-  current: () => { session: Session; mode: LabelMode },
+  current: () => { session: Session; mode: LabelMode; speaker?: string | null },
   composer = false,
 ) {
   return [
@@ -527,7 +535,10 @@ export function Composer({
   const editor = useEditor(
     {
       extensions: [
-        ...extensions(() => latest.current, true),
+        ...extensions(
+          () => ({ ...latest.current, speaker: speakerRef.current }),
+          true,
+        ),
         Extension.create({
           name: "saveEntry",
           priority: 1001,
@@ -559,7 +570,7 @@ export function Composer({
           editor.getJSON() as RichText,
           latest.current.session,
         );
-        if (prefix) {
+        if (prefix && speakerRef.current === null) {
           speakerRef.current = prefix.speaker;
           setSpeaker(prefix.speaker);
           editor.commands.deleteRange({ from: 1, to: 1 + prefix.size });
@@ -610,6 +621,8 @@ export function Composer({
       if (entryId.current === submittedId) {
         pendingCreation.current = undefined;
         entryId.current = newId();
+        speakerRef.current = null;
+        setSpeaker(null);
         editor.commands.clearContent();
         localStorage.removeItem(
           draftKey(props.session.id, `composer-${props.slideId}`),
@@ -667,6 +680,8 @@ export function Composer({
     } else {
       pendingCreation.current = undefined;
       entryId.current = newId();
+      speakerRef.current = null;
+      setSpeaker(null);
       editor.commands.clearContent();
       localStorage.removeItem(
         draftKey(props.session.id, `composer-${props.slideId}`),
@@ -708,6 +723,7 @@ export function Composer({
           value={speaker ?? ""}
           onChange={(e) => {
             const value = e.target.value || null;
+            speakerRef.current = value;
             setSpeaker(value);
             if (editor)
               saveDraft({
@@ -739,8 +755,8 @@ export function Composer({
         <EditorContent editor={editor} />
       </div>
       <p className="speaker-hint">
-        Find a name or role with @. Up / Down and Enter select it. To set the
-        speaker: start with @name, select, then type :.
+        In a general note, start with @ and select a name or role to set the
+        speaker. Otherwise, @ adds a linked mention. Saving resets to General note.
       </p>
       <div className="composer-footer">
         <span>
