@@ -627,13 +627,15 @@ export function Composer({
         localStorage.removeItem(
           draftKey(props.session.id, `composer-${props.slideId}`),
         );
-        editor.commands.focus();
       }
     } catch {
       /* Transport displays the error. The composer and stable ID survive. */
     } finally {
       setBusy(false);
-      editor.setEditable(true);
+      if (!editor.isDestroyed) {
+        editor.setEditable(true);
+        editor.commands.focus();
+      }
     }
   };
   performSubmit.current = () => {

@@ -434,7 +434,8 @@ test("representative and representation dropdowns support arrow selection, facil
   await composer.press("Enter");
   await expect(page.locator(".entry")).toHaveCount(1);
   await expect(speaker).toHaveValue("");
-  await composer.pressSequentially("@Alice");
+  await expect(composer).toBeFocused();
+  await page.keyboard.type("@Alice");
   await expect(menu.getByRole("option")).toHaveCount(2);
   await page.screenshot({ path: testInfo.outputPath("dropdown-desktop.png") });
   await composer.press("ArrowDown");
@@ -515,6 +516,7 @@ test("representative and representation dropdowns support arrow selection, facil
   await expect(page.locator(".entry")).toHaveCount(3);
   await expect(page.locator(".entry").last()).toContainText("General note");
   await expect(speaker.locator("option:checked")).toHaveText("General note");
+  await expect(composer).toBeFocused();
 });
 
 test("leading colon shortcuts select speakers while inline mentions and ambiguous names retain their identities", async ({
